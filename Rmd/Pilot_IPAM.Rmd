@@ -1,0 +1,101 @@
+---
+title: "Pilot_IPAM"
+author: "Mike Connelly"
+date: "2/13/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "~/Desktop/PAN10AntiExpt_020719")
+```
+```{r}
+library(tidyverse)
+library(ggplot2)
+```
+
+```{r}
+IPAM_t0 <- read.csv("./analysis/IPAM_t0.24.48.csv")
+IPAM_t0$Fragment.ID. <- as.factor(IPAM_t0$Fragment.ID.)
+IPAM_t0$Treatment <- factor(IPAM_t0$Treatment, levels = c("Control", "Low-Anti", "High-Anti"), ordered = TRUE)
+IPAM_t0$Meas..Time <- factor(IPAM_t0$Meas..Time, levels = c("tb", "t0", "t24", "t48"), ordered = TRUE)
+```
+
+```{r}
+treatcolors <- c("#0000FF", "#00CCCC", "#339999")
+treatfills <- c("#99CCFF", "#99FFFF", "#66CCCC")
+colshapes <- c(18, 9, 16, 10)
+colcolors <- c("#CCFFCC", "#99FFCC", "#CCFFFF", "#CCCCFF")
+```
+```{r}
+condcolors_LPS <- c("#0000FF", "#FF66FF")
+condfillcolors_LPS <- c("#99CCFF", "#FFCCFF")
+```
+
+
+```{r}
+pdf(file = "./analysis/IPAMtime.pdf", width = 6, height = 4)
+plot <- ggplot(IPAM_t0, aes(x=Treatment, y=Fv.Fm, color=Treatment))
+plot + 
+  geom_boxplot(aes(fill=Treatment)) +
+  geom_point() +
+  facet_grid(~Meas..Time) +
+  scale_color_manual(values = treatcolors) +
+  scale_fill_manual(values = treatfills)
+```
+```{r}
+pdf(file = "./analysis/IPAMtreatment.pdf", width = 6, height = 4)
+plot2 <- ggplot(IPAM_t0, aes(x=Meas..Time, y=Fv.Fm, color=Treatment))
+plot2 + 
+  geom_boxplot(aes(fill=Treatment)) +
+  geom_point() + 
+  facet_grid(~Treatment) +
+  scale_color_manual(values = treatcolors) +
+  scale_fill_manual(values = treatfills)
+```
+```{r}
+pdf(file = "./analysis/IPAMfragment.pdf", width = 6, height = 4)
+plot3 <- ggplot(IPAM_t0, aes(x=Meas..Time, y=Fv.Fm, color=Treatment))
+plot3 + 
+  geom_boxplot(aes(fill=Treatment)) + 
+  geom_point() + 
+  facet_grid(~Fragment.ID.) +
+  scale_color_manual(values = treatcolors) +
+  scale_fill_manual(values = treatfills)
+```
+```{r}
+mean(IPAM_t0$Fv.Fm)
+```
+
+Two-way ANOVA to test significance of treatment and time factors
+```{r}
+ipam.aov <- aov(Fv.Fm ~ Treatment + Meas..Time + Treatment:Meas..Time, data = IPAM_t0)
+summary(ipam.aov)
+TukeyHSD(ipam.aov, which = c("Treatment", "Meas..Time"))
+```
+```{r}
+ipam.geno.aov <- aov(Fv.Fm ~ Fragment.ID. + Meas..Time + Fragment.ID.:Meas..Time, data = IPAM_t0)
+summary(ipam.geno.aov)
+TukeyHSD(ipam.geno.aov, which = c("Fragment.ID.", "Meas..Time"))
+```
+```{r}
+IPAM_high <- filter(IPAM_t0, Treatment=="High-Anti")
+IPAM_low <- filter(IPAM_t0, Treatment=="Low-Anti")
+IPAM_ctrl <- filter(IPAM_t0, Treatment=="Control")
+```
+```{r}
+ipam.high.aov <- aov(Fv.Fm ~ Meas..Time + Fragment.ID. + Meas..Time:Fragment.ID., data = IPAM_high)
+summary(ipam.high.aov)
+TukeyHSD(ipam.high.aov, which = c("Meas..Time", "Fragment.ID."))
+```
+```{r}
+ipam.low.aov <- aov(Fv.Fm ~ Meas..Time + Fragment.ID. + Meas..Time:Fragment.ID., data = IPAM_low)
+summary(ipam.low.aov)
+TukeyHSD(ipam.low.aov, which = c("Meas..Time", "Fragment.ID."))
+```
+```{r}
+ipam.ctrl.aov <- aov(Fv.Fm ~ Meas..Time + Fragment.ID. + Meas..Time:Fragment.ID., data = IPAM_ctrl)
+summary(ipam.ctrl.aov)
+TukeyHSD(ipam.ctrl.aov, which = c("Meas..Time", "Fragment.ID."))
+```
+

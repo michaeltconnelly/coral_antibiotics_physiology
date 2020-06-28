@@ -1,0 +1,47 @@
+---
+title: "Pdam_AntiPilot_042319_Resp"
+output: html_notebook
+---
+
+```{r}
+#knitr::opts_knit()
+library(tidyverse)
+library(ggplot2)
+```
+
+```{r}
+data <- read_csv(file = "/Users/mikeconnelly/Desktop/PAN10AntiExpt_042319/analysis/pocillopora_antipilot_042419.csv")
+data$Treatment <- factor(data$Treatment, levels = c("blank", "Control", "Low Anti", "High Anti"), ordered = TRUE)
+mean(data$MO2[data$Treatment=="blank"])
+
+```
+```{r}
+data1 <- dplyr::filter(data, Treatment != "blank")
+mean(data$MO2[data$Treatment!="blank"])
+mean(data$MO2[data$Treatment=="blank"])
+```
+
+```{r}
+treatcolors <- c("#0000FF", "#00CCCC", "#339999")
+treatfills <- c("#99CCFF", "#99FFFF", "#66CCCC")
+colshapes <- c(18, 9, 16, 10)
+colcolors <- c("#CCFFCC", "#99FFCC", "#CCFFFF", "#99FFCC")
+```
+
+```{r}
+theme_set(theme_bw())
+pdf(file = "/Users/mikeconnelly/Desktop/PAN10AntiExpt_042319/analysis/resp_treatment_proposal.pdf", width = 3, height = 5)
+g <- ggplot(data1, aes(x=Treatment, y=normMO2, color=Treatment))
+g +  geom_boxplot(aes(fill=Treatment)) +
+  geom_point() +
+  scale_color_manual(values = treatcolors) +
+  scale_fill_manual(values = treatfills) + 
+  ylab("normMO2   (pmolO2/polyp/min)") +
+  theme(legend.position = "none", text = element_text(size=14))
+```
+```{r}
+normMO2.aov <- aov(normMO2 ~ Treatment, data = data1)
+summary.aov(normMO2.aov)
+normMO2.aov
+```
+
