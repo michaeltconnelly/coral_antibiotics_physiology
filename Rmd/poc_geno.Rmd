@@ -1,0 +1,21 @@
+---
+title: "R Notebook"
+---
+
+```{r}
+library("tidyverse")
+```
+```{r}
+pocillopora <- read_csv(file = "./data/Pdam_master.csv")
+```
+
+```{r}
+length(unique(pocillopora$genotype))
+table(pocillopora$genotype)
+table(pocillopora$Location)
+```
+```{r}
+table(pocillopora$ORF)
+table(pocillopora$ITS2)
+```
+
