@@ -7,11 +7,81 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "/Users/mikeconnelly/computing/projects/anti_phys")
 ```
 ```{r packages}
 library("respR")
 ```
 
+```{r check}
+# As lazy loading is in place, we do not need to call example data explicitly.
+# This example will use the `urchins.rd` example data.
+urchins.rd
+# 1. check data for errors, select cols 1 and 15:
+urch <- inspect(urchins.rd, 1, 15) 
+# 2. automatically determine linear segment:
+rate <- auto_rate(urch)
+# 3. convert units
+out <- convert_rate(rate, "mg/l", "s", "mg/h/kg", 0.6, 0.4)
+
+## Alternatively, use dplyr pipes:
+urchins.rd %>%        # using the urchins dataset,
+  select(1, 15) #%>%   # select columns 1 and 15
+  inspect()     %>%   # inspect the data, then
+  auto_rate()   %>%   # automatically determine most linear segment
+  print()       %>%   # just a quick preview
+  convert_rate("mg/l", "s", "mg/h/kg", 0.6, 0.4) # convert units
+```
+
+```{r}
+data(package = "respR")
+?urchins.rd
+```
+```{r}
+?import_file()
+```
+```{r}
+resp_062420_oxy <- import_file(path = "./data/resp/Meas-577_newpilot_062420_Oxygen.xlsx")
+resp_062420_phase <- import_file(path = "./data/resp/Meas-577_newpilot_062420_Phase.xlsx")
+resp_063020_oxy <- import_file(path = "./data/resp/063020_577_OXY.xlsx")
+```
+```{r}
+rates_frame <- data.frame()
+for (i in 3:26) {
+rate <- resp_063020_oxy %>%
+  select(2,i) %>% 
+  inspect() %>% 
+  auto_rate() %>% # automatically determine most linear segment
+  print()  %>%   # just a quick preview
+  convert_rate("mg/l", "s", "mg/h/kg", 0.6, 0.4)
+rates_frame[i-2, 1] <- rate$output[1]
+}
+```
+```{r}
+rate <- resp_063020_oxy %>%
+  select(2,25) %>% 
+  inspect() %>%
+  auto_rate()   %>%   # automatically determine most linear segment
+  print()       %>%   # just a quick preview
+  convert_rate("mg/l", "s", "mg/h/kg", 0.6, 0.4) # convert units
+rate$input[1]
+```
+```{r}
+print(rate)
+summary(rate)
+```
+```{r}
+plot(rate)
+```
+
+
+```{r}
+convert_rate(rate, 
+             o2.unit = "mg/L", 
+             time.unit = "min", 
+             output.unit = "ug/m", 
+             volume = 1.5e-3)
+```
 ```{r}
 
 ```
