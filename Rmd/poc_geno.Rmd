@@ -1,6 +1,9 @@
 ---
 title: "R Notebook"
 ---
+```{r}
+knitr::opts_knit$set(root.dir = "~/computing/projects/anti_phys/")
+```
 
 ```{r}
 library("tidyverse")
@@ -12,10 +15,37 @@ pocillopora <- read_csv(file = "./data/Pdam_master.csv")
 ```{r}
 length(unique(pocillopora$genotype))
 table(pocillopora$genotype)
-table(pocillopora$Location)
+table(pocillopora$Location, pocillopora$genotype)
 ```
 ```{r}
-table(pocillopora$ORF)
-table(pocillopora$ITS2)
+table(pocillopora$ORF, pocillopora$ITS2)
+table(pocillopora$Location, pocillopora$ORF)
+```
+```{r}
+pocgeno <- pocillopora %>%
+  group_by(Location, ORF, ITS2) %>% 
+  summarise(.,
+            n_genotypes = n_distinct(genotype),
+            fragments = n())
+write.csv(pocgeno, "pocillopora_genotype_traits.csv")
+```
+```{r}
+genotype_fragments %>% filter(Location == "Saboga Island" & ORF == "Type_3") %>% arrange(desc(fragments))
+genotype_fragments %>% filter(Location == "Uva" & ORF == "Type_1" & ITS2 == "C1bc?") %>% arrange(desc(fragments))
+```
+```{r}
+genotypes <- pocillopora %>% 
+  distinct(genotype, .keep_all = TRUE) %>%
+  select(-Fragment)
+fragments <- pocillopora %>%
+  group_by(genotype) %>% 
+  summarise(.,
+            fragments = n())
+genotype_fragments <- left_join(genotypes, fragments, by = "genotype")
+```
+```{r}
+expt_genotypes <- c("39", "43", "78", "79", "83", "35", "32", "34", "37", "41", "44")
+pocillopora_expt <- pocillopora[pocillopora$genotype %in% expt_genotypes, ]
+write.csv(pocillopora_expt, "pocillopora_expt_genotype_frags.csv")
 ```
 
