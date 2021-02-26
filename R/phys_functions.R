@@ -1,6 +1,10 @@
-library(plyr)
-library(tidyverse)
+## Functions for Pocillopora microfragment physiology data analysis 
+library("plyr")
+library("tidyverse")
 
+###
+
+### Ana's import functions
 Import_YII <- function (dir)  {
 # 1. Read all the .csv files (; delimited) and consolidate them in a single data frame
   # dir: folder containing the .csv files. The data in the dir can be separated in subfolders, recursive = TRUE will find the .csv files inside the subfolders
@@ -10,8 +14,8 @@ Import_YII <- function (dir)  {
    IPAM.data <- plyr::ldply (list.files(path = dir, pattern = "*.csv", 
                                 full.names = TRUE, recursive = TRUE),
                      function(filename) {
-                       dum=(read.csv(filename, sep = ";", blank.lines.skip=T))
-                       dum$filename=filename
+                       dum = (read.csv(filename, sep = ";", blank.lines.skip = T))
+                       dum$filename = filename
                        return(dum)
                      })  
 
@@ -71,7 +75,3 @@ Import_F0 <- function (dir)  {
   return(F0)
 }
   
-
-YII_t0 <- Import_YII(("/Users/mikeconnelly/Desktop/PAN10AntiExpt_042319/IPAM/"))
-F0_t0 <- Import_F0(("/Users/mikeconnelly/Desktop/PAN10AntiExpt_042319/IPAM/"))
-Fm_t0
