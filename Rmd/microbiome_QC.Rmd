@@ -1,0 +1,62 @@
+---
+title: "Pocillopora_microbiome_QC"
+author: "Mike Connelly"
+date: "2/16/2021"
+output: 
+  html_document:
+      code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "~/computing/projects/anti_phys")
+```
+```{r packages}
+library("tidyverse")
+# extended visualization functions
+source("./R/ggrare.R")
+```
+
+## Quality control plots
+```{r rd}
+# Read in read depth information
+readdepth <- read_csv("./outputs/qiime2/QC/per-sample-fastq-counts.csv")
+colnames(readdepth) <- c("SampleID", "Count")
+readdepth <- merge.data.frame(map, readdepth, by = "SampleID")
+```
+
+### Read depth QC plot
+```{r rd_qc}
+# readdepth <- dplyr::filter(readdepth, Treatment == "control" | Treatment == "Heat" | Treatment == "Antibiotics" | Treatment == "Antibiotics.Heat" | Treatment == "positive" | Treatment == "negative") %>%
+  # dplyr::filter(Reef == "Houwan" | Reef == "Wanglitung" | Reef == "controls")
+###
+###
+readdepth$Treatment <- factor(readdepth$Treatment, levels = treatment_levels, ordered = TRUE)
+readdepth <- dplyr::arrange(readdepth, Treatment, Colony)
+readdepth$SampleID <- factor(readdepth$SampleID, levels = readdepth$SampleID, ordered = TRUE)
+###
+ggdepth <- ggplot(readdepth, aes(SampleID, Count)) 
+ggdepth +
+  geom_bar(stat = "identity", aes(color = Treatment, fill = Treatment)) +
+  #scale_y_continuous(trans = 'log10') +
+  scale_color_manual(values = c(condcolors_AxH, "black", "black")) +
+  scale_fill_manual(values = c(condfillcolors_AxH, "dark gray", "light gray")) +
+  ylab("16S Read Count") +
+  theme(axis.text.x = element_text(angle = 90)) +
+  ggtitle("Total number of 16S reads per sample")
+ggsave(file = "./outputs/phyloseq-results/figures/readdepth_AXH.pdf", width = 169, height = 85,  units = "mm", device = "pdf")
+ggsave(file = "./manuscript_figures/FigS##_16S_readdepth.pdf", width = 169, height = 85,  units = "mm", device = "pdf")
+```
+
+### Rarefaction curve
+```{r rare_curve}
+grare <- ggrare(ps, step = 10, color = "Treatment", plot = FALSE, se = TRUE)
+grare <- grare + 
+  scale_color_manual(values = treatcolors) +
+  #facet_wrap(~Treatment) +
+  ggtitle("Rarefaction curve of 16S amplicon sequence variants")
+print(grare)
+ggsave(file = "./outputs/phyloseq_results/figures/rarefaction_curve_anti_control.pdf", width = 200, height = 185,  units = "mm", device = "pdf")
+# ggsave(file = "./manuscript_figures/FigS##_rarefactioncurve.pdf", width = 169, height = 85,  units = "mm", device = "pdf")
+```
+

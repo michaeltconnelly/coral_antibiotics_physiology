@@ -1,0 +1,51 @@
+---
+title: "image_names"
+author: "Mike Connelly"
+date: "9/2/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "~/computing/projects/anti_phys")
+library(tidyverse)
+```
+```{r}
+image_names <- read_csv("./data/image_names_d5.csv",
+                        col_types = cols(
+                          Sample_ID = col_character(),
+                          Plate_Well_ID = col_character(),
+                          Fragment_ID = col_character(),
+                          Genotype = col_character(),
+                          Treatment = col_character()
+                        ))
+```
+
+```{r}
+# plate_key_master %>%
+#   filter(Meas_Day == "day4") %>% 
+#   select(Sample_ID, Plate, Well) %>% 
+#   filter(Sample_ID != "b") %>% 
+```
+
+
+```{r}
+image_names_fragments <- image_names %>% 
+  separate(Plate_Well_ID, into = c("Plate", "Well"), sep = "-") %>% 
+  select(-Fragment_ID) %>% 
+  filter(Sample_ID != "b")
+# 
+image_names_fragments$Genotype[image_names_fragments$Genotype == "Uraba-51"] <- "URA-51"
+image_names_fragments$Treatment[image_names_fragments$Treatment == "Antibiotics"] <- "A"
+image_names_fragments$Treatment[image_names_fragments$Treatment == "Control"] <- "C"
+image_names_fragments$Plate <- gsub("^", "plate", image_names_fragments$Plate)
+
+# image_names_fragments$Image_Name <- image_names_fragments %>% 
+images <- image_names_fragments %>% unite(col = "Image_Name", Sample_ID, Genotype, Treatment, Plate, Well, sep = "_", remove = TRUE)
+images$Image_Name <- paste(images$Image_Name, "2.5x", "a", sep = "_")
+```
+
+```{r}
+write_csv(images, path = "./data/images_d5.csv")
+```
+

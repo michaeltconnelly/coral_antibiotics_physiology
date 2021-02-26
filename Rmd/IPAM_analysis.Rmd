@@ -1,0 +1,266 @@
+---
+title: "IPAM_analysis"
+author: "Mike Connelly"
+date: "7/12/2020"
+output: html_document
+---
+## Setup directories and packages
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "~/computing/projects/anti_phys")
+```
+```{r packages}
+library("tidyverse")
+library("ggplot2")
+library("ggpubr")
+library("ggnewscale")
+```
+```{r colors}
+#rename to named colors
+treatcolors <- c("lightblue", "dodgerblue", "seagreen1")
+#treatfills <- c()
+genotype_colors <- read_csv("data/genotype_colors.csv") # color names csv corresponding to excel sheet colors
+genocolors <- c(genotype_colors$color, "grey")
+```
+```{r theme}
+theme_set(theme_bw())
+```
+## Import sample metadata
+```{r genotypes_fragments}
+genotypes <- read_csv("data/genotypes.csv")
+#
+fragments <- read_csv("data/fragments.csv", col_types = cols(
+  Fragment_ID = col_character()))
+```
+```{r factors}
+# factor levels
+treatment_levels <- c("Baseline", "Control", "Antibiotics")
+sampling_levels <- c("Day 0", "Day 7")
+genotype_levels <- c("PAN-5", "PAN-10", "PAN-32", "PAN-34", "PAN-35", "PAN-37", "PAN-39", "PAN-41", "PAN-43","PAN-44", "PAN-78", "PAN-79", "PAN-83", "URA-51", NA)
+gulf_levels <- c("Chiriqui", "Panama")
+loc_levels <- c("Uva", "Saboga", "Uraba")
+mtorf_levels <- c("Type_1", "Type_2", "Type_3", "unknown")
+sym_levels <- c("C1bc", "C1d", "D1", "D2", "unknown")
+```
+
+## Import plate fragment-position keys
+```{r plate_keys}
+# Fragment positions in the 24-well plates were randomized each day during media changes, and positions were maintained through the IPAM assessment, microscopy imaging, and microplate respirometry
+# Information about which fragments or blank wells were in which position needs to be imported and made to correspond with the appropriate AOI information (IPAM) and well position information (respirometry) in the imported source data
+
+# import IPAM area of interest (AOI) to fragment ID keys to later connect measurements to sample metadata
+plate_keys <- list.files(path = "./data/plate_keys", pattern = "plate_key_d[[:digit:]]\\.csv", full.names = T)
+# check to ensure all files are present
+plate_keys
+
+# Create lookup table for AOI_ID from Well_ID
+wells_aoi <- c("A1" = 1, "A2" = 2, "A3" = 3, "A4" = 4, "A5" = 5, "A6" = 6,
+               "B1" = 7, "B2" = 8, "B3" = 9, "B4" = 10, "B5" = 11, "B6" = 12,
+               "C1" = 13, "C2" = 14, "C3" = 15, "C4" = 16, "C5" = 17, "C6" = 18,
+               "D1" = 19, "D2" = 20, "D3" = 21, "D4" = 22, "D5" = 23, "D6" = 24)
+aoi_levels <- as.character(1:24)
+
+# Import all plate keys 
+plate_key_master <- plate_keys %>%
+  map_dfr(read_csv) %>% 
+  dplyr::select(Meas_Day, Sample_ID, Fragment_ID, Plate_Well_ID) %>% 
+  arrange(Sample_ID) %>% 
+  separate(col = Plate_Well_ID, into = c("Plate", "Well"), sep = "-")
+
+# add column that converts the well ID information into AOI for IPAM
+plate_key_master$AOI <- as.character(unname(wells_aoi[plate_key_master$Well]))
+
+plate_key_master <- plate_key_master %>% 
+  unite(AOI_ID, Plate, AOI, sep = "_", remove = FALSE) %>% 
+  unite(AOI_ID_key, Meas_Day, AOI_ID, sep = "_", remove = FALSE) %>% 
+  unite(Well_ID, Plate, Well, sep = "_", remove = FALSE) %>% 
+  unite(Well_ID_key, Meas_Day, Well_ID, sep = "_", remove = FALSE) %>% 
+  arrange(Well_ID_key)
+```
+## Import IPAM data
+```{r ipam_data, message=FALSE, warning=FALSE}
+# List all plate information files in the target import directory
+ipam_data_files <- list.files(path = "./data/ipam", pattern = "*.csv", full.names = T)
+# name files for easier parsing of path contents including measurement day (day1 - day7), plate number (plate1 - plate6), and date (MMDDYY)
+# example path: "./data/ipam/ipam_day1_plate1_083120.csv
+# check file paths
+ipam_data_files
+
+# import all ipam files to data frame
+ipam_plates_df <- sapply(ipam_data_files[1:30], # ignore ipam measurements taken at sampling time (day 5 positions)
+                         read_delim,
+                         delim = ";",
+                         col_types = cols(
+                           .default = col_double(),
+                           Date = col_character(),
+                           Time = col_time(format = ""),
+                           X77 = col_skip()
+                           ),
+                         simplify=FALSE) %>% 
+  bind_rows(.id = "path")
+
+# check ipam data frame
+ipam_plates_df
+```
+
+```{r ipam_tidy}
+ipam_plates_data <- ipam_plates_df %>% 
+  # filter only three measurements after initial F0 record on 60-second intervals
+  filter(No. < 5 & No. > 1) %>% 
+  # regex to parse measurement day and plate number
+  extract(col = path, into = c("Meas_Day", "Plate", "Date_B"), regex = "^./data/ipam/(day[0-7])_plate([[:alnum:]]{1,2})_([[:digit:]]{6}).csv$") 
+
+# Tidy data according to initial format and sample AOI information
+ipam_tidy <- ipam_plates_data %>%
+  dplyr::select(-Date, -Time, -PAR) %>% 
+  dplyr::select(Meas_Day:No., "Y(II)1":"Y(II)24") %>% 
+  pivot_longer(., cols = ("Y(II)1":"Y(II)24"), names_to = "parameter_AOI", values_to = "value") %>% 
+  # extract plate number and AOI/well number into different columns
+  extract(col = parameter_AOI, into = c("parameter", "AOI"), regex = "(Y\\(II\\))([[:digit:]]{1,2})") 
+# yields 2160 x 7 data frame
+```
+```{r ipam_key_link}
+# Match corresponding AOIs to Fragment IDs or blanks 
+ipam_tidied <- ipam_tidy %>%
+  unite(AOI_ID, Plate, AOI, sep = "_", remove = FALSE) %>% 
+   unite(AOI_ID_key, Meas_Day, AOI_ID, sep = "_", remove = FALSE)
+
+# Process tidy ipam data
+ipam_complete <- ipam_tidied %>% 
+  group_by(Meas_Day, AOI_ID) %>% 
+  # summarize across three replicates to obtain averaged Y(II) values for 144 wells (24x6)
+  summarise(mean_value = mean(value)) %>%
+  unite(AOI_ID_key, Meas_Day, AOI_ID, sep = "_", remove = FALSE) %>% 
+  # join with plate key to obtain fragment positions
+  left_join(plate_key_master, by = "AOI_ID_key") %>%
+  dplyr::select(-contains(".y")) %>%
+  rename(AOI_ID = AOI_ID.x, Meas_Day = Meas_Day.x) %>% 
+  # join with fragments and genotypes to link metadata
+  left_join(fragments, by = "Fragment_ID") %>%
+  left_join(genotypes, by = "Genotype")
+
+# set factor levels
+ipam_complete$Genotype <- factor(ipam_complete$Genotype, levels = genotype_levels, ordered = TRUE)
+ipam_complete$Treatment <- factor(ipam_complete$Treatment, levels = treatment_levels, ordered = TRUE)
+```
+
+## Exploratory visualizations
+```{r single-day_ipam_boxplot}
+ipam_boxplot <- ipam_complete %>% 
+  filter(Meas_Day == "day5") %>% 
+  ggplot(aes(Genotype, mean_value, fill = Genotype)) +
+  geom_boxplot() +
+  geom_jitter(shape = 21) +
+  geom_point() +
+  # ylim(c(0.0, 0.8)) +
+  scale_fill_manual(values = genocolors)
+ipam_boxplot
+# ggsave("outputs/figures/ipam_day5_boxplot.pdf", ipam_boxplot,  device = "pdf", height = 4, width = 10)
+```
+```{r daily_ipam_treatment_comp}
+ipam_complete %>% 
+  filter(!is.na(Fragment_ID)) %>% 
+  ggplot(aes(Treatment, mean_value, fill = Genotype)) +
+  geom_boxplot() +
+  geom_jitter(shape = 21) +
+  geom_point() +
+  facet_grid(~Genotype) +
+  ylim(c(0.0, 0.8)) +
+  scale_fill_manual(values = genocolors)
+```
+
+
+```{r ipam_progression_plots}
+ipam_complete %>% 
+  filter(!is.na(Fragment_ID)) %>%
+  filter(Gulf == "Chiriqui") %>%
+  ggplot(aes(Meas_Day, mean_value)) +
+  geom_boxplot(aes(fill = Genotype)) +
+  geom_point(aes(color = Treatment)) +
+  geom_path(aes(group = Fragment_ID)) +
+  facet_grid(Treatment~Genotype) +
+  scale_fill_manual(values = genocolors) + 
+  scale_color_manual(values = treatcolors[2:3])
+  
+```
+```{r}
+genotype_summary <- ipam_complete %>%
+  group_by(Treatment, Genotype, Meas_Day) %>% 
+  summarise(geno_mean_value = mean(mean_value)) %>% 
+  filter(!is.na(Genotype))
+```
+```{r}
+genotype_ipam_progression_boxplot <- ipam_complete %>% 
+  filter(!is.na(Fragment_ID)) %>%
+  # filter(Gulf == "Chiriqui") %>%
+  # filter(Gulf == "Panama") %>%
+  ggplot(aes(Meas_Day, mean_value)) +
+  geom_boxplot(aes(fill = Treatment)) +
+  # geom_path(data = genotype_summary, aes(Meas_Day, geno_mean_value, group = Genotype, color = Genotype)) +
+  # geom_point(data = genotype_summary, aes(Meas_Day, geno_mean_value, color = Genotype), size = 5) +
+  geom_path(aes(group = Sample_ID, color = Genotype)) +
+  geom_point(aes(color = Genotype)) +
+  # facet_wrap(~Genotype + Treatment) +
+  facet_grid(.~Treatment)+
+  scale_color_manual(values = genocolors) +
+  scale_fill_manual(values = treatcolors[2:3]) + 
+  ggtitle("IPAM Y(II) values during experiment")
+genotype_ipam_progression_boxplot
+ggsave("./outputs/figures/genotype_ipam_progression_boxplot.pdf", genotype_ipam_progression_boxplot, device = "pdf", height = 5, width = 10)
+```
+```{r ipam_symbiont_type_boxplot}
+ipam_its2 <- ipam_complete %>% 
+  filter(!is.na(Fragment_ID)) %>% 
+  ggplot(aes(Meas_Day, mean_value)) +
+  geom_boxplot(aes(fill = Treatment)) +
+  geom_point(aes(Meas_Day, mean_value, color = Genotype), size = 2) +
+  facet_grid(~ ITS2 + Treatment, switch = "y") +
+  ylim(c(0.0, 0.8)) +
+  scale_color_manual(values = genocolors) +
+  scale_fill_manual(values = treatcolors[2:3])
+print(ipam_its2)
+ggsave("./outputs/figures/genotype_ipam_its2_boxplot", ipam_its2, device = "pdf", height = 5, width = 16)
+```
+```{r genotype_trait_grid}
+gridtitle <- "Pocillopora coral mtORF types and symbiont ITS2 types"
+geno_grid <- ipam_complete %>% 
+  filter(!is.na(Fragment_ID)) %>%
+  # filter(Gulf == "Chiriqui") %>%
+  # filter(Gulf == "Panama") %>%
+  ggplot(aes(x = Gulf)) +
+  facet_grid(mtORF~ITS2, switch = "y") + ggtitle(gridtitle)
+# ggsave("./outputs/figures/genotype_grid.pdf", geno_grid, device = "pdf", height = 6, width = 10)
+```
+
+## Statistical tests
+
+```{r normality_tests}
+ipam_fragments <- ipam_complete %>% 
+  filter(Sample_ID != "b")
+# Tests for normality 
+shapiro.test(ipam_fragments$mean_value)
+# 
+shapiro.test(ipam_tidied$value)
+
+ggdensity(log(ipam_fragments$mean_value, base = exp(1)))
+ggqqplot((ipam_fragments$mean_value))
+```
+
+```{r variance_test}
+bartlett.test()
+```
+
+
+
+```{r}
+# Two-way ANOVA to test significance of treatment and time factors
+ipam_anova <- aov(mean_value ~ Treatment + Meas_Day + Treatment*Meas_Day, data = ipam_complete)
+summary(ipam_anova)
+TukeyHSD(ipam_anova, which = c("Treatment", "Meas_Day"))
+```
+```{r}
+fit <- lm(mean_value ~ Treatment + Genotype + Meas_Day, data = ipam_fragments)
+summary(fit)
+anova(fit)
+```
+

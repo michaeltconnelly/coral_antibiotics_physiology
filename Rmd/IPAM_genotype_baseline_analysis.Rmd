@@ -1,0 +1,255 @@
+---
+title: "IPAM_analysis"
+author: "Mike Connelly"
+date: "7/12/2020"
+output: html_document
+---
+## Setup directories and packages
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "~/computing/projects/anti_phys")
+```
+```{r packages}
+library(tidyverse)
+library(ggplot2)
+```
+```{r colors}
+#rename to named colors
+#treatcolors <- c("#0000FF", "#00CCCC", "#339999", "#009966")
+#treatfills <- c("#99CCFF", "#99FFFF", "#66CCCC", "#99FFCC")
+#colshapes <- c(18, 9, 16, 10)
+genotype_colors <- read_csv("data/genotype_colors.csv") # color names csv corresponding to excel sheet colors
+# default ggplot fill may also work in this case
+genocolors <- genotype_colors$color
+```
+```{r theme}
+theme_set(theme_bw())
+```
+
+## Import IPAM data and sample metadata
+```{r fragments}
+fragments <- read_csv("data/fragments.csv", col_types = cols(
+  Fragment_ID = col_character()
+))
+# factor levels
+treatment_levels <- c("Baseline", "Control", "Antibiotics")
+sampling_levels <- c("Day 0", "Day 7")
+# sampling_levels <- 
+genotypes <- read_csv("data/genotypes.csv")
+genotype_levels <- c("PAN-5", "PAN-10", "PAN-32", "PAN-34", "PAN-35", "PAN-37", "PAN-39", "PAN-41", "PAN-43","PAN-44", "PAN-78", "PAN-79", "PAN-83", "URA-51")
+gulf_levels <- c("Chiriqui", "Panama")
+loc_levels <- c("Uva", "Saboga", "Uraba")
+mtorf_levels <- c("Type_1", "Type_2", "Type_3", "unknown")
+sym_levels <- c("C1bc", "C1d", "D1", "D2", "unknown")
+# read in fragment mass data
+mass <- read_csv("data/fragment_mass.csv", col_types = cols(
+  Fragment_ID = col_character(),
+  Mass = col_double()
+))
+```
+```{r fragment_mass_analysis}
+fragment_mass <- left_join(fragments, mass, by = "Fragment_ID")
+fragment_mass$Treatment <- factor(fragments$Treatment, levels = treatment_levels, ordered = TRUE)
+fragment_mass$Genotype <- factor(fragments$Genotype, levels = genotype_levels, ordered = TRUE)
+# 
+fragment_mass_boxplot <- fragments %>% 
+  ggplot(aes(Genotype, Mass, fill = Genotype)) +
+  geom_boxplot() +
+  geom_jitter(shape = 21) +
+  # facet_grid(~Treatment, scales = "free") +
+  scale_fill_manual(values = genocolors)
+ggsave("outputs/figures/fragment_mass_boxplot.pdf", fragment_mass_boxplot,  device = "pdf", height = 4, width = 10)
+```
+```{r host_symbiont_pairings}
+host_sym_jitter <- fragments %>% 
+  # filter(Treatment != "Baseline") %>% 
+  ggplot(aes(Gulf, Mass)) +
+  # geom_boxplot() +
+  geom_jitter(shape = 21, aes(fill = Genotype)) +
+  facet_grid(ITS2~mtORF, scales = "free") +
+  scale_fill_manual(values = genocolors) +
+  ylim(c(0, 0.4))
+ggsave("outputs/figures/corals_symbiont_pairings_jitter.pdf", host_sym_jitter,  device = "pdf", height = 6, width = 8)
+```
+
+```{r ipam_genotype_plate_data}
+# Create lookup table for AOI_ID from Well_ID
+wells_aoi <- c("A1" = 1, "A2" = 2, "A3" = 3, "A4" = 4, "A5" = 5, "A6" = 6,
+               "B1" = 7, "B2" = 8, "B3" = 9, "B4" = 10, "B5" = 11, "B6" = 12,
+               "C1" = 13, "C2" = 14, "C3" = 15, "C4" = 16, "C5" = 17, "C6" = 18,
+               "D1" = 19, "D2" = 20, "D3" = 21, "D4" = 22, "D5" = 23, "D6" = 24)
+
+# List all plate information files in the target import directory
+plate_files <- list.files(path = "./data/ipam/baseline", pattern = "*.csv", full.names = T)
+
+# Import all plate information files
+ipam_plates_df <- sapply(plate_files,
+                         read_delim,
+                         delim = ";",
+                         # cols = cols(
+                         #   .default = col_double(),
+                         #   Date = col_character(),
+                         #   Time = col_time(format = ""),
+                         #   X41 = col_skip()
+                         #   ), 
+                         simplify=FALSE) %>% 
+  bind_rows(.id = "path")# %>% 
+  # select(-(Genotype:Sampling_Time)) %>% 
+  # arrange(Sample_ID) %>% 
+  # separate out plate and well information
+  # separate(col = Plate_Well_ID, into = c("Plate_ID", "Well_ID"), sep = "-")
+# extract measurement day variable from filenames in "path" column
+
+plates_df$AOI_ID <- as.character(unname(wells_aoi[plates_df$Well_ID]))
+```
+```{r}
+str_view(ipam_plates_df$path, "^./data/ipam/baseline/")
+str_view(ipam_plates_df$path, "^./data/ipam/baseline/[[:alpha:]]{3}-[[:digit:]]{1,2}_baseline_[[:digit:]]{6}.csv$")
+```
+
+```{r ipam_tidy}
+ipam_plates_data <- ipam_plates_df %>% 
+  filter(No. < 5 & No. != 1) %>% 
+  extract(col = path, into = c("Genotype", "type"), regex = "^./data/ipam/baseline/([[:alpha:]]{3}-[[:digit:]]{1,2})_(baseline)_[[:digit:]]{6}.csv$") #%>% select(F1:F9)
+# Tidy data according to initial format and sample AOI information
+# tidyr 
+# dplyr pivot_longer
+# separate() to separate plate number and AOI/well number into different columns
+ipam_tidy <- ipam_plates_data %>%
+  select(-Date, -Time, -PAR, -X41) %>% 
+  select(No., Genotype, "Y(II)1":"Y(II)12") %>% 
+  pivot_longer(., cols = ("Y(II)1":"Y(II)12"), names_to = "Measurement_AOI", values_to = "value") %>% 
+  extract(col = Measurement_AOI, into = c("Measurement", "AOI"), regex = "(Y\\(II\\))([[:digit:]]{1,2})") %>% 
+  left_join(genotypes, by = "Genotype")
+```
+
+```{r}
+colnames(ipam_tidy) <- c("replicate", "Genotype", "measurement", "AOI_ID", "value")
+ipam_tidy$Genotype <- factor(ipam_tidy$Genotype, levels = c("PAN-5", "PAN-10", "PAN-32", "PAN-34", "PAN-35", "PAN-37", "PAN-39", "PAN-41", "PAN-43","PAN-44", "PAN-78", "PAN-79", "PAN-83", "URA-51"), ordered = TRUE)
+```
+```{r}
+ipam_baseline_boxplot <- ipam_tidy %>% 
+  filter(No. == "2") %>% 
+  ggplot(aes(Genotype, value, fill = Genotype)) +
+  geom_boxplot() +
+  geom_jitter(shape = 21) +
+  # facet_grid(~ITS2, scales = "free") +
+  scale_fill_manual(values = genocolors) +
+  ylim(c(0.0, 0.8))
+ggsave("outputs/figures/ipam_baseline_boxplot.pdf", ipam_baseline_boxplot,  device = "pdf", height = 4, width = 10)
+```
+```{r ipam_summarize_FvFm}
+IPAM_calc_8 <- IPAM_tidy_8 %>%
+  mutate(FvFm = Fv/Fm) %>% 
+  group_by(AOI_ID) %>% 
+  summarise(avg_FvFm = mean(FvFm), sd_FvFm = sd(FvFm))
+```
+```{r}
+IPAM_calc_all <- bind_rows(IPAM_calc_0, IPAM_calc_8, .id = "Meas_Day")
+```
+
+
+```{r}
+plate_data_pilot <- read_csv("data/plate_data/plate_pilot_fragments.csv", 
+                       col_names = TRUE,
+                       cols(
+  Plate_ID = col_character(),
+  Well_ID = col_character(),
+  AOI_ID = col_character(),
+  Fragment_ID = col_character()
+))
+# Read in plate data for individual days
+plate_data <- read_csv("data/plate_data/plate_data_d0.csv", 
+                       col_names = TRUE) %>% 
+  select(-(Genotype:Sampling_Time)) %>% 
+  arrange(Sample_ID) %>% 
+  separate(col = Plate_Well_ID, into = c("Plate_ID", "Well_ID"), sep = "-")
+plate_data$AOI_ID <- as.character(unname(wells_aoi[plate_data$Well_ID]))
+```
+
+Full joins of all IPAM data across all days, enable filtering by plate, well position as well as treatment, genotype, etc.
+```{r}
+IPAM_plate <- full_join(IPAM_calc_all, plate_data_pilot, by = "AOI_ID")
+IPAM_plate %>% group_by(Meas_Day) %>% summarise(meanFvFm = mean(avg_FvFm), sdFvFm = sd(avg_FvFm))
+```
+
+
+### Plot YII, Fv/Fm values
+```{r}
+IPAM_plate %>% ggplot(aes(x = Meas_Day, y = avg_FvFm)) + 
+  geom_boxplot(aes(color = Meas_Day)) +
+  geom_point(aes(color = Meas_Day))
+```
+
+```{r}
+#pdf(file = "./analysis/IPAMtime.pdf", width = , height = 4)
+plot <- ggplot(IPAM, aes(x=Treatment, y=Fv.Fm, color=Treatment))
+plot + 
+  geom_boxplot(aes(fill=Treatment)) +
+  geom_point() +
+  facet_grid(~Meas..Time) +
+  scale_color_manual(values = treatcolors) +
+  scale_fill_manual(values = treatfills) + 
+  theme(legend.position = "none")
+```
+
+```{r}
+pdf(file = "./analysis/IPAMtreatment_proposal.pdf", width = 6, height = 4)
+plot2 <- ggplot(IPAM, aes(x=Meas..Time, y=Fv.Fm, color=Treatment))
+plot2 + 
+  geom_boxplot(aes(fill=Treatment)) +
+  geom_point() + 
+  facet_grid(~Treatment) +
+  scale_color_manual(values = treatcolors) +
+  scale_fill_manual(values = treatfills) + 
+  theme(legend.position = "bottom", text = element_text(size=16))
+```
+
+```{r}
+#pdf(file = "./analysis/IPAMfragment.pdf", width = 6, height = 4)
+plot3 <- ggplot(IPAM, aes(x=Meas..Time, y=Fv.Fm, color=Treatment))
+plot3 + 
+  geom_boxplot(aes(fill=Treatment)) + 
+  geom_point() + 
+  facet_grid(~Fragment.ID.) +
+  scale_color_manual(values = treatcolors) +
+  scale_fill_manual(values = treatfills)
+```
+```{r}
+mean(IPAM$Fv.Fm)
+```
+
+## Statistical tests
+Two-way ANOVA to test significance of treatment and time factors
+```{r}
+ipam.aov <- aov(Fv.Fm ~ Treatment + Meas..Time + Treatment:Meas..Time, data = IPAM)
+summary(ipam.aov)
+TukeyHSD(ipam.aov, which = c("Treatment", "Meas..Time"))
+```
+```{r}
+ipam.geno.aov <- aov(Fv.Fm ~ Fragment.ID. + Meas..Time + Fragment.ID.:Meas..Time, data = IPAM)
+summary(ipam.geno.aov)
+TukeyHSD(ipam.geno.aov, which = c("Fragment.ID.", "Meas..Time"))
+```
+```{r}
+IPAM_veryhigh <- filter(IPAM, Treatment=="Very-High-Anti")
+IPAM_high <- filter(IPAM, Treatment=="High-Anti")
+IPAM_low <- filter(IPAM, Treatment=="Low-Anti")
+IPAM_ctrl <- filter(IPAM, Treatment=="Control")
+```
+```{r}
+ipam.high.aov <- aov(Fv.Fm ~ Meas..Time + Fragment.ID. + Meas..Time:Fragment.ID., data = IPAM_high)
+summary(ipam.high.aov)
+TukeyHSD(ipam.high.aov, which = c("Meas..Time", "Fragment.ID."))
+```
+```{r}
+ipam.low.aov <- aov(Fv.Fm ~ Meas..Time + Fragment.ID. + Meas..Time:Fragment.ID., data = IPAM_low)
+summary(ipam.low.aov)
+TukeyHSD(ipam.low.aov, which = c("Meas..Time", "Fragment.ID."))
+```
+```{r}
+ipam.ctrl.aov <- aov(Fv.Fm ~ Meas..Time + Fragment.ID. + Meas..Time:Fragment.ID., data = IPAM_ctrl)
+summary(ipam.ctrl.aov)
+TukeyHSD(ipam.ctrl.aov, which = c("Meas..Time", "Fragment.ID."))
+```
+

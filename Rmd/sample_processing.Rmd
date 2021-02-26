@@ -1,0 +1,93 @@
+---
+title: "sample_processing"
+author: "Mike Connelly"
+date: "12/9/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "~/computing/projects/anti_phys")
+```
+```{r packages}
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+library(ggnewscale)
+```
+```{r colors}
+#rename to named colors
+treatcolors <- c("lightblue", "seagreen1", "dodgerblue")
+#treatfills <- c()
+#shapes <- c(18, 9, 16, 10) # may be useful for genotype variables: Gulf, Location, mtORF, symbiont, etc.
+genotype_colors <- read_csv("data/genotype_colors.csv") # color names csv corresponding to excel sheet colors
+# default ggplot fill may also work in this case
+genocolors <- c(genotype_colors$color, "grey")
+```
+```{r theme}
+theme_set(theme_bw())
+```
+## Import sample metadata and sample processing data (Qubit concentrations)
+```{r fragments}
+fragments <- read_csv("data/fragments.csv", col_types = cols(
+  Fragment_ID = col_character()
+))
+# factor levels
+treatment_levels <- c("Baseline", "Control", "Antibiotics")
+sampling_levels <- c("Day 0", "Day 7")
+# sampling_levels <- 
+genotypes <- read_csv("data/genotypes.csv")
+genotype_levels <- c("PAN-5", "PAN-10", "PAN-32", "PAN-34", "PAN-35", "PAN-37", "PAN-39", "PAN-41", "PAN-43","PAN-44", "PAN-78", "PAN-79", "PAN-83", "URA-51", NA)
+gulf_levels <- c("Chiriqui", "Panama")
+loc_levels <- c("Uva", "Saboga", "Uraba")
+mtorf_levels <- c("Type_1", "Type_2", "Type_3", "unknown")
+sym_levels <- c("C1bc", "C1d", "D1", "D2", "unknown")
+```
+```{r}
+extracts <- read_csv("data/extractions.csv") %>% rename("Fragment_ID" = Sample_ID)
+amplicons <- read_csv("data/amplicons_16S.csv") %>% rename("Fragment_ID" = Sample_ID)
+# read in fragment mass data
+mass <- read_csv("data/fragment_mass.csv", col_types = cols(
+  Fragment_ID = col_character(),
+  Mass = col_double()
+))
+```
+
+```{r}
+processed <- full_join(fragments, extracts, by = "Fragment_ID") %>%
+  left_join(amplicons, by = "Fragment_ID") %>% 
+  left_join(mass, by = "Fragment_ID")
+```
+
+```{r}
+processed %>% ggplot(aes(Treatment, DNA_conc_ng_uL)) +
+  geom_boxplot()
+```
+```{r}
+processed %>% ggplot(aes(DNA_conc_ng_uL, RNA_conc_ng_uL)) +
+  geom_point(aes(color = Extraction_date))
+processed %>% ggplot(aes(DNA_conc_ng_uL, RNA_conc_ng_uL)) +
+  geom_point(aes(color = Genotype)) + 
+  stat_ellipse(aes(group = Genotype, color = Genotype))
+dna_rna_plot <- processed %>% ggplot(aes(DNA_conc_ng_uL, RNA_conc_ng_uL)) +
+  geom_point(aes(color = Treatment)) + 
+  stat_ellipse(aes(group = Treatment, color = Treatment))
+ggsave(dna_rna_plot, filename = "outputs/dna_rna_plot.pdf", device = "pdf")
+```
+```{r}
+processed %>% ggplot(aes(Mass, DNA_conc_ng_uL)) +
+    geom_point(aes(color = Treatment)) + 
+  stat_ellipse(aes(group = Treatment, color = Treatment))
+```
+```{r}
+amplicon_plot <- processed %>% ggplot(aes(DNA_input_ng, DNA_amp_conc_ng_uL)) +
+    geom_point(aes(color = Treatment)) + 
+  stat_ellipse(aes(group = Treatment, color = Treatment))
+ggsave(amplicon_plot, filename = "outputs/amplicon_plot.pdf", device = "pdf")
+
+processed %>% ggplot(aes(DNA_input_ng, DNA_amp_conc_ng_uL)) +
+    geom_point(aes(color = Genotype)) + 
+  stat_ellipse(aes(group = Genotype, color = Genotype)) + 
+  facet_grid(Treatment~.)
+```
+
