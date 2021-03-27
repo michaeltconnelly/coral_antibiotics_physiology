@@ -20,9 +20,10 @@ source("./R/ggrare.R")
 ## Quality control plots
 ```{r rd}
 # Read in read depth information
-readdepth <- read_csv("./outputs/qiime2/QC/per-sample-fastq-counts.csv")
-colnames(readdepth) <- c("SampleID", "Count")
-readdepth <- merge.data.frame(map, readdepth, by = "SampleID")
+readdepth <- read_tsv("./outputs/qiime2/QC/per-sample-fastq-counts.tsv", col_names = c("Sample_ID", "forward_count", "reverse_count"), col_types = cols(Sample_ID = col_character(),
+  forward_count = col_number(),
+  reverse_count = col_number()), skip = 1)
+readdepth <- left_join(sample_metadata, readdepth, by = "Sample_ID")
 ```
 
 ### Read depth QC plot
@@ -31,32 +32,37 @@ readdepth <- merge.data.frame(map, readdepth, by = "SampleID")
   # dplyr::filter(Reef == "Houwan" | Reef == "Wanglitung" | Reef == "controls")
 ###
 ###
-readdepth$Treatment <- factor(readdepth$Treatment, levels = treatment_levels, ordered = TRUE)
-readdepth <- dplyr::arrange(readdepth, Treatment, Colony)
-readdepth$SampleID <- factor(readdepth$SampleID, levels = readdepth$SampleID, ordered = TRUE)
+# readdepth$Treatment <- factor(readdepth$Treatment, levels = treatment_levels, ordered = TRUE)
+# readdepth <- dplyr::arrange(readdepth, Treatment, Colony)
+# readdepth$SampleID <- factor(readdepth$SampleID, levels = readdepth$SampleID, ordered = TRUE)
 ###
-ggdepth <- ggplot(readdepth, aes(SampleID, Count)) 
-ggdepth +
+ggdepth <- ggplot(readdepth, aes(Sample_ID, forward_count)) +
   geom_bar(stat = "identity", aes(color = Treatment, fill = Treatment)) +
-  #scale_y_continuous(trans = 'log10') +
-  scale_color_manual(values = c(condcolors_AxH, "black", "black")) +
-  scale_fill_manual(values = c(condfillcolors_AxH, "dark gray", "light gray")) +
+  # scale_y_continuous(trans = 'log10') +
+  scale_color_manual(values = c(treatcolors, "black", "black")) +
+  scale_fill_manual(values = c(treatcolors, "dark gray", "light gray")) +
   ylab("16S Read Count") +
   theme(axis.text.x = element_text(angle = 90)) +
   ggtitle("Total number of 16S reads per sample")
-ggsave(file = "./outputs/phyloseq-results/figures/readdepth_AXH.pdf", width = 169, height = 85,  units = "mm", device = "pdf")
-ggsave(file = "./manuscript_figures/FigS##_16S_readdepth.pdf", width = 169, height = 85,  units = "mm", device = "pdf")
+ggsave(file = "./outputs/phyloseq_results/figures/readdepth.pdf", width = 400, height = 150,  units = "mm", device = "pdf")
 ```
+```{r}
+readdepth %>% 
+  filter(forward_count > 1000) %>% 
+  summarise(mean = mean(forward_count),
+            se = se(forward_count))
+```
+
 
 ### Rarefaction curve
 ```{r rare_curve}
 grare <- ggrare(ps, step = 10, color = "Treatment", plot = FALSE, se = TRUE)
 grare <- grare + 
-  scale_color_manual(values = treatcolors) +
-  #facet_wrap(~Treatment) +
+  scale_color_manual(values = c(treatcolors, rep("black", 4))) +
+  # facet_wrap(~Treatment) +
   ggtitle("Rarefaction curve of 16S amplicon sequence variants")
 print(grare)
-ggsave(file = "./outputs/phyloseq_results/figures/rarefaction_curve_anti_control.pdf", width = 200, height = 185,  units = "mm", device = "pdf")
+ggsave(file = "./outputs/phyloseq_results/figures/rarefaction_curve.pdf", width = 400, height = 150,  units = "mm", device = "pdf")
 # ggsave(file = "./manuscript_figures/FigS##_rarefactioncurve.pdf", width = 169, height = 85,  units = "mm", device = "pdf")
 ```
 

@@ -44,7 +44,7 @@ theme_mec <- function(base_size = 10, base_family = "Arial") {
 
 gg_biplot <- function (pcobj, choices = 1:2, scale = 1, pc.biplot = TRUE, 
                        obs.scale = 1 - scale, var.scale = scale, groups = NULL, groups2 = NULL, 
-                       ellipse = FALSE, ellipse.prob = 0.68, labels = NULL, labels.size = 3, 
+                       ellipse = FALSE, ellipse.prob = 0.95, labels = NULL, labels.size = 3, 
                        alpha = 1, var.axes = TRUE, circle = FALSE, circle.prob = 0.69, 
                        varname.size = 3, varname.adjust = 1.5, varname.abbrev = FALSE, taxlabs = NULL,
                        ...) 
@@ -126,7 +126,7 @@ gg_biplot <- function (pcobj, choices = 1:2, scale = 1, pc.biplot = TRUE,
     # dplyr::filter(varname %in% int_families)
   # 
   g <- ggplot(data = df.u, aes(x = xvar, y = yvar)) + xlab(u.axis.labs[1]) + 
-    ylab(u.axis.labs[2]) + coord_fixed()
+    ylab(u.axis.labs[2]) + coord_fixed(1)
   if (var.axes) {
     if (circle) {
       theta <- c(seq(-pi, pi, length = 50), seq(pi, -pi, 
@@ -170,7 +170,7 @@ gg_biplot <- function (pcobj, choices = 1:2, scale = 1, pc.biplot = TRUE,
   }
   else {
     if (!is.null(df.u$groups)) {
-      g <- g + geom_point(aes(color = groups, fill = groups2), shape = 21, size = 2, stroke = 1, alpha = alpha)
+      g <- g + geom_point(aes(fill = groups), shape = 21, size = 2, stroke = 0.5, color = "black", alpha = alpha)
     }
     else {
       g <- g + geom_point(alpha = alpha)
@@ -198,10 +198,10 @@ taxa_color_seq <- function(physeq, taxa_rank) {
   # 
   taxa_rank_name <- sym(taxa_rank)
   taxa_colors_table <- psmelted %>% 
-    group_by({{ taxa_rank_name }}) %>% 
-    summarise(cum_rel_ab = sum(Abundance)/48) %>% 
-    arrange(cum_rel_ab) %>% 
-    filter({{ taxa_rank_name }} != "<1% abundance")
+    dplyr::group_by({{ taxa_rank_name }}) %>% 
+    dplyr::summarise(cum_rel_ab = sum(Abundance)/48) %>% 
+    dplyr::arrange(cum_rel_ab) %>% 
+    dplyr::filter({{ taxa_rank_name }} != "<1% abundance")
   # 
   lowtaxa <- data.frame("<1% abundance", 0)
   colnames(lowtaxa) <- colnames(taxa_colors_table)
@@ -228,7 +228,7 @@ taxa_barplot <- function(physeq, taxa_rank, taxa_levels, taxa_colors) {
   barplot <- ggplot(data = psmelted, aes(x = Sample, y = Abundance, fill = psmelted[, taxa_rank]))
   barplot <- barplot +
     geom_bar(aes(), stat = "identity") +
-    facet_nested(. ~ Treatment + Genotype, scales = "free_x", space = "free", switch = NULL) + # facet by Gulf too
+    facet_nested(. ~ Treatment + Gulf + Genotype, scales = "free_x", space = "free", switch = NULL) + # facet by Gulf too
     scale_fill_manual(values = rev(taxa_colors$hex)) + # note that order is reversed
     ylab("Relative Abundance") +
     guides(fill = guide_legend(nrow = 10))
@@ -346,4 +346,72 @@ aldex.plot_gg <- function (x, ..., type = c("MW", "MA"), xlab = NULL, ylab = NUL
   }
 }
 
+### ALDEx2 MA and MW plots ggplot2 for bacteria differential abundance
+aldex_plot_gg <- function (x, ..., type = c("MW", "MA"), xlab = NULL, ylab = NULL, 
+                           xlim = NULL, ylim = NULL,
+                           rare = 0, cutoff = 0.1,
+                           all.col = rgb(0, 0, 0, 0.2), called.col = "red", rare.col = "black",
+                           pointsize = 3,
+                           thres.line.col = "darkgrey", test = "welch") 
+{
+  type <- match.arg(type)
+  if (length(x$effect) == 0) 
+    stop("Please run aldex.effect before plotting")
+  if (test == "welch") {
+    if (length(x$we.eBH) == 0) 
+      stop("Welch's t test results not in dataset")
+    called <- x$we.eBH <= cutoff
+  }
+  else if (test == "wilcox") {
+    if (length(x$wi.eBH) == 0) 
+      stop("Wilcoxon test results not in dataset")
+    called <- x$wi.eBH <= cutoff
+  }
+  if (test == "glm") {
+    if (length(x$glm.eBH) == 0) 
+      stop("glm test results not in dataset")
+    called <- x$glm.eBH <= cutoff
+  }
+  if (test == "kruskal") {
+    if (length(x$kw.eBH) == 0) 
+      stop("Kruskall-Wallace test results not in dataset")
+    called <- x$kw.eBH <= cutoff
+  }
+  if (type == "MW") {
+    if (is.null(xlab)) 
+      xlabel <- expression("Median" ~ ~Log[2] ~ ~"win-Condition diff")
+    if (is.null(ylab)) 
+      ylabel <- expression("Median" ~ ~Log[2] ~ ~"btw-Condition diff")
+    x$asv.type <- ifelse(x$rab.all < rare, "rare", ifelse(x$we.eBH < cutoff, "called", "all"))
+    ggaldex_mw <- ggplot(data = x, aes(x = diff.win, y = diff.btw, color = asv.type)) +
+      geom_point(size = pointsize) +
+      geom_abline(aes(intercept = 0, slope = 1), linetype = "dashed", color = thres.line.col) +
+      geom_abline(aes(intercept = 0, slope = -1), linetype = "dashed", color = thres.line.col) +
+      # add text labels to each point
+      geom_text_repel(data = x %>% filter(asv.type == "called"), aes(label = paste(Family, Species, sep = " - ")), size = 2) + 
+      scale_x_continuous(limits = c()) +
+      scale_y_continuous() +
+      scale_color_manual(name = "ASV Type", values = c(all.col, called.col, rare.col)) +
+      xlab(xlabel) +
+      ylab(ylabel)
+    return(ggaldex_mw)
+  }
+  if (type == "MA") {
+    if (is.null(xlab)) 
+      xlabel <- expression("Median" ~ ~Log[2] ~ ~"relative abundance")
+    if (is.null(ylab)) 
+      ylabel <- expression("Median" ~ ~Log[2] ~ ~"btw-Condition diff")
+    x$asv.type <- ifelse(x$rab.all < rare, "rare", ifelse(x$we.eBH < cutoff, "called", "all"))
+    ggaldex_ma <- ggplot(x, aes(x = rab.all, y = diff.btw, color = asv.type)) +
+      geom_point(size = pointsize) +
+      # add text labels to each point
+      geom_text_repel(data = x %>% filter(asv.type == "called"), aes(label = paste(Family, Species, sep = " - ")),  size = 2) + 
+      scale_x_continuous() +
+      scale_y_continuous() +
+      scale_color_manual(name = "ASV Type", values = c(all.col, called.col, rare.col)) +
+      xlab(xlabel) +
+      ylab(ylabel)
+    return(ggaldex_ma)
+  }
+}
 
