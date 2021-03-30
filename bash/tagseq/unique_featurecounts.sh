@@ -29,7 +29,8 @@ module load subread
 #-o ${prodir}/outputs/STARalign_Pdam/${samp}_Aligned.sortedByCoord.out.uniq.bam
 #done
 
-featureCounts -T 5 -t gene -s 1 \
+featureCounts -p -T 8 -t gene \
+-g ID \
 -a ${mcs}/sequences/genomes/coral/pocillopora/pdam_genome.gff \
--o ${prodir}/outputs/STARcounts_Pdam \
+-o ${prodir}/outputs/STARcounts_Pdam/PocAnti_Pdam.counts \
 ${prodir}/outputs/STARalign_Pdam/*uniq.bam
