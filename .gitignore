@@ -5,3 +5,6 @@
 .RData
 ./data/resp/
 ./data/ipam/
+./data/reads_bacteria/
+./data/classifiers/
+./data/image*

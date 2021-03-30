@@ -1,7 +1,7 @@
 ---
 title: "respR_analysis"
 author: "Mike Connelly"
-date: "6/29/2020"
+date: "3/30/2021"
 output: html_document
 ---
 
@@ -183,17 +183,43 @@ dev.off()
 resp_all_df <- bind_rows(resp_all, .id = "id") %>% separate(id, into = c("day", "plate"), sep = "_")
 ```
 ```{r all_plates_24-channel}
-raw_data_plot <- resp_all_df %>% 
-  filter(`Time/Min.` > 15) %>% # filter out time before 15 minutes, this is usually how long the plate takes to equilibrate
-  filter(`Time/Min.` < 60) %>% 
+resp_all_df_tidy <- resp_all_df %>% 
+  # filter(`Time/Min.` > 15) %>% # filter out time before 15 minutes, this is usually how long the plate takes to equilibrate
+  # filter(`Time/Min.` < 60) %>% 
   dplyr::select(day, plate, `Time/Min.`, A1:D6) %>% 
   pivot_longer(cols = A1:D6,
                names_to = "Well",
-               values_to = "pct_oxygen") %>% 
+               values_to = "pct_oxygen") 
+# plot all plates colored by well position
+raw_data_plot <- resp_all_df_tidy %>% 
   ggplot(aes(x = `Time/Min.`, y = pct_oxygen)) +
-  geom_point(aes(color = Well)) +
+  geom_point(aes(color = Well), size = 0.05) +
   facet_grid(plate ~ day, switch = "y")
-ggsave("./outputs/figures/raw_data_plates.pdf", raw_data_plot, height = 6, width = 10)
+ggsave("./outputs/physio/respR/figures/raw_data_plates.pdf", raw_data_plot, height = 6, width = 10)
+```
+```{r all_plates_24-channel_metadata}
+resp_all_df_tidy_meta <- resp_all_df_tidy %>% 
+  mutate(plate_num = str_extract(plate, "[[:digit:]]"),
+         Well_ID_key = str_c(day, plate_num, Well, sep = "_")) %>% 
+  left_join(day_plate, by = "Well_ID_key") %>% 
+  left_join(fragments, by = "Fragment_ID") %>%
+  left_join(mass, by = "Fragment_ID") %>% 
+  left_join(genotypes, by = "Genotype")
+
+# plot all plates colored by treatment
+raw_data_plot_treatment <- resp_all_df_tidy_meta %>% 
+  ggplot(aes(x = `Time/Min.`, y = pct_oxygen)) +
+  geom_point(aes(color = Treatment), size = 0.05) +
+  scale_color_manual(values = c(treatcolors[3], treatcolors[2], "darkgrey")) +
+  facet_grid(plate ~ day, switch = "y")
+ggsave("./outputs/physio/respR/figures/raw_data_plates_treatment.pdf", raw_data_plot_treatment, height = 6, width = 10)
+
+# plot all plates colored by fragment mass
+raw_data_plot_mass <- resp_all_df_tidy_meta %>% 
+  ggplot(aes(x = `Time/Min.`, y = pct_oxygen)) +
+  geom_point(aes(color = Mass), size = 0.05) +
+  facet_grid(plate ~ day, switch = "y")
+ggsave("./outputs/physio/respR/figures/raw_data_plates_mass.pdf", raw_data_plot_mass, height = 6, width = 10)
 ```
 
 
@@ -266,7 +292,7 @@ rates_frame <- data.frame("Well" = vector(), "rate" = numeric())
 # loop through rate calculation steps 
 for (i in 3:26) {
 rate <- plate %>%
-  # filter(`Time/Min.` > 20) %>% # filter out time before 20 minutes, this is usually how long the plate takes to equilibrate
+  filter(`Time/Min.` > 20) %>% # filter out time before 20 minutes, this is usually how long the plate takes to equilibrate
   inspect(time = 2, oxygen = i) %>%
   auto_rate() %>% # automatically determine most linear segment
   print()  %>%   # just a quick preview
@@ -448,6 +474,7 @@ geno_rates_plot
 ggsave("./outputs/physio/respR/figures/geno_rates_boxplot.pdf", height = 5, width = 10, device = "pdf")
 ```
 
+
 ## Statistical analysis
 ```{r}
 rates_frame_auto_meta1 <- rates_frame_auto_meta %>%
@@ -530,10 +557,10 @@ rates_frame_samples <- rates_frame_auto_meta %>% filter(Sample_ID != "b")
 ```
 
 ```{r}
-Resp_Genotype <- ggplot(rates_frame_samples, aes (Meas_Day, rate_norm, color = Genotype)) +
+Resp_Genotype <- ggplot(rates_frame_samples, aes (Meas_Day, rate_norm, color = Genotype, group = Genotype)) +
   geom_point(alpha=0.3) +
   stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", width = 0.2 ) +
-  stat_summary(fun.y=mean, geom = "line") +
+  stat_summary(fun=mean, geom = "line") +
   scale_color_manual(values = genocolors) +
   theme_classic()
 
@@ -543,17 +570,19 @@ Resp_Genotype + facet_grid(Location~Treatment)
 ```
 ```{r}
 # Treatment 
-Resp_Treatment <- ggplot(rates_frame_samples, aes (Meas_Day, rate_norm, colour=Treatment)) +
+Resp_Treatment <- ggplot(rates_frame_samples, aes (Meas_Day, rate_norm, color = Treatment, group = Treatment)) +
   stat_summary(fun.data = "mean_cl_boot",geom = "errorbar", width = 0.2)+
   #stat_summary(fun.y=mean, geom="point", size =3, alpha=0.5) +
-  stat_summary(fun.y=mean, geom="line") + theme_classic()+
-  theme(plot.background=element_blank(), 
-            panel.border = element_blank(),
-            axis.line = element_line(colour = "black"),
-            panel.grid.major = element_blank(),
-            panel.grid.minor = element_blank(),
-            legend.position="bottom",
-            strip.background = element_rect(fill="white")) +
+  stat_summary(fun.y=mean, geom="line") + 
+  ylim(0, 400) +
+  # theme_classic() +
+  # theme(plot.background=element_blank(), 
+  #           panel.border = element_blank(),
+  #           axis.line = element_line(colour = "black"),
+  #           panel.grid.major = element_blank(),
+  #           panel.grid.minor = element_blank(),
+  #           legend.position="bottom",
+  #           strip.background = element_rect(fill="white")) +
       scale_color_manual(values = treatcolors[2:3]) #+
       # scale_y_continuous(limits = c(0.1, 0.7),
       #                    breaks = seq(0.2, 0.6,0.2),  
@@ -566,7 +595,56 @@ Resp_Treatment <- ggplot(rates_frame_samples, aes (Meas_Day, rate_norm, colour=T
 Resp_Treatment
 Resp_Treatment + facet_wrap(~mtORF)
 Resp_Treatment + facet_wrap(~ITS2)
+ggsave("./outputs/physio/respR/respR_progression_plot_its2_treatment.pdf", device = "pdf", height = 5, width = 11)
 ```
+```{r}
+title <- expression(paste(italic("Pocillopora"), " oxygen consumption rates during experiment", collapse = ""))
+resp_progression_boxplot_genotype_its2 <- rates_frame_samples %>% 
+  # filter(!is.na(Fragment_ID)) %>%
+  # filter(Gulf == "Chiriqui") %>%
+  # filter(Gulf == "Panama") %>%
+  ggplot(aes(Meas_Day, rate_norm, group = Genotype, color = Genotype)) +
+  geom_point(aes(color = Genotype), alpha = 0.3) +
+  stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", width = 0.2 ) +
+  stat_summary(fun = mean, geom = "line") +
+  # geom_boxplot(aes(fill = Treatment)) +
+  # geom_path(aes(group = Sample_ID, color = Genotype)) +
+  facet_nested(. ~ ITS2 + Treatment, scales = "free_x", space = "free", switch = NULL) +
+  scale_color_manual(values = genocolors) +
+  scale_fill_manual(values = treatcolors[2:3]) + 
+  ylim(0, 400) +
+  labs(x = "Experiment Day", y = "Mass-normalized oxygen consumption rate (ug/min/g)") +
+  ggtitle(title)
+resp_progression_boxplot_genotype_its2
+ggsave("./outputs/physio/respR/respR_progression_plot_its2_genotype.pdf", resp_progression_boxplot_genotype_its2, device = "pdf", height = 5, width = 11)
+# ITS2 type has a significant effect on Fv/Fm values
+# PAN-37, PAN-39, PAN-83, (URA-51) are candidates for symbiont switching after Ana initally characterized them
+```
+```{r}
+title <- expression(paste(italic("Pocillopora"), " oxygen consumption rates during experiment", collapse = ""))
+resp_progression_boxplot_genotype_its2 <- rates_frame_samples %>% 
+  # filter(!is.na(Fragment_ID)) %>%
+  # filter(Gulf == "Chiriqui") %>%
+  # filter(Gulf == "Panama") %>%
+  ggplot(aes(Meas_Day, rate_norm, group = Genotype, color = Genotype)) +
+  geom_point(aes(color = Genotype), alpha = 0.3) +
+  stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", width = 0.2 ) +
+  stat_summary(fun = mean, geom = "line") +
+  # geom_boxplot(aes(fill = Treatment)) +
+  # geom_path(aes(group = Sample_ID, color = Genotype)) +
+  facet_nested(. ~ mtORF + Treatment, scales = "free_x", space = "free", switch = NULL) +
+  scale_color_manual(values = genocolors) +
+  scale_fill_manual(values = treatcolors[2:3]) + 
+  ylim(0, 400) +
+  labs(x = "Experiment Day", y = "Mass-normalized oxygen consumption rate (ug/min/g)") +
+  ggtitle(title)
+resp_progression_boxplot_genotype_its2
+ggsave("./outputs/physio/respR/respR_progression_plot_mtORF_genotype.pdf", resp_progression_boxplot_genotype_its2, device = "pdf", height = 5, width = 11)
+# ITS2 type has a significant effect on Fv/Fm values
+# PAN-37, PAN-39, PAN-83, (URA-51) are candidates for symbiont switching after Ana initally characterized them
+```
+
+
 ```{r}
 # Libraries 
   library("lme4")
