@@ -1,6 +1,6 @@
 #!/bin/bash
 #./bash/tagseq/read_trimming.sh
-#purpose: create file directory structure in Pegasus scratch space and copy key reference files, start pipeline
+#purpose: create wrapper scripts for read trimming using bbduk from BBtools suite
 #To start this job from the anti_phys directory, use:
 #bsub -P transcriptomics < ./bash/tagseq/read_trimming.sh
 
@@ -18,7 +18,7 @@ mcs="/scratch/projects/transcriptomics/mikeconnelly"
 prodir="/scratch/projects/transcriptomics/mikeconnelly/projects/anti_phys"
 
 # making a list of sample names
-samples=$(cat quantseq_samples.txt)
+samples=$(cat ${prodir}/data/quantseq_samples.txt)
 
 #lets me know which files are being processed
 echo "These are the samples to be trimmed:"
