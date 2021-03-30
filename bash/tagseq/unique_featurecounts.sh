@@ -23,13 +23,13 @@ samples=$(cat ${prodir}/data/quantseq_samples.txt)
 module load samtools
 module load subread
 
-for samp in $samples ; do
+#for samp in $samples ; do
 #samtools index ${prodir}/outputs/alignments/${samp}_Aligned.sortedByCoord.out.bam
-samtools view -q 255 -Sub ${prodir}/outputs/STARalign_Pdam/${samp}_PdamAligned.sortedByCoord.out.bam \
--o ${prodir}/outputs/STARalign_Pdam/${samp}_Aligned.sortedByCoord.out.uniq.bam
-done
+#samtools view -q 255 -Sub ${prodir}/outputs/STARalign_Pdam/${samp}_PdamAligned.sortedByCoord.out.bam \
+#-o ${prodir}/outputs/STARalign_Pdam/${samp}_Aligned.sortedByCoord.out.uniq.bam
+#done
 
 featureCounts -T 5 -t gene -s 1 \
--a ${mcs}/sequences/genomes/coral/pocillopora/pocillopora_genome.gff \
+-a ${mcs}/sequences/genomes/coral/pocillopora/pdam_genome.gff \
 -o ${prodir}/outputs/STARcounts_Pdam \
 ${prodir}/outputs/STARalign_Pdam/*uniq.bam
