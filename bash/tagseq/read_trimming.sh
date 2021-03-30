@@ -46,7 +46,7 @@ echo 'module load java/1.8.0_60' >> ${prodir}/bash/jobs/"${sample}"_trim.job
 #   input command to trim raw reads
 echo 'echo 'Trimming "${sample}"'' >> "${prodir}"/bash/jobs/"${sample}"_trim.job
 
-echo '${mcs}/programs/bbduk.sh -Xmx512m \
+echo '~/programs/bbmap/bbduk.sh -Xmx512m \
 in='"${prodir}"'/data/quantseq_reads/'"${sample}"'.fastq \
 out='"${prodir}"'/outputs/trimmed_reads/'"${sample}"'_trimmed.fastq \
 ref='"${prodir}"'/data/bbmap_resources/polyA.fa.gz,'"${prodir}"'/data/bbmap_resources/truseq_rna.fa.gz \
