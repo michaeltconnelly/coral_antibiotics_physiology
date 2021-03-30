@@ -33,20 +33,20 @@ echo "Preparing script for ${sample}"
 echo '#!/bin/bash' > ${prodir}/bash/jobs/"${sample}"_trim.job
 echo '#BSUB -q general' >> ${prodir}/bash/jobs/"${sample}"_trim.job
 echo '#BSUB -J '"${sample}"'_trim' >> ${prodir}/bash/jobs/"${sample}"_trim.job
-echo '#BSUB -o ${prodir}/outputs/logfiles/'"${sample}"'_trim.out' >> ${prodir}/bash/jobs/"${sample}"_trim.job
-echo '#BSUB -e ${prodir}/outputs/errorfiles/'"${sample}"'_trim.err' >> ${prodir}/bash/jobs/"${sample}"_trim.job
+echo '#BSUB -o "'${prodir}'"/outputs/logfiles/'"${sample}"'_trim.out' >> ${prodir}/bash/jobs/"${sample}"_trim.job
+echo '#BSUB -e "'${prodir}'"/outputs/errorfiles/'"${sample}"'_trim.err' >> ${prodir}/bash/jobs/"${sample}"_trim.job
 
 #   input command to load modules for trimming
 echo 'module load java/1.8.0_60' >> ${prodir}/bash/jobs/"${sample}"_trim.job
 
 #   input command to unzip raw reads before trimming
-echo 'echo 'Unzipping "${sample}"'' >> "${prodir}"/bash/jobs/"${sample}"_trim.job
-echo 'gunzip '"${prodir}"/data/quantseq_reads/"${sample}".fastq.gz >> "${prodir}"/bash/jobs/"${sample}"_trim.job
+#echo 'echo 'Unzipping "${sample}"'' >> "${prodir}"/bash/jobs/"${sample}"_trim.job
+#echo 'gunzip '"${prodir}"/data/quantseq_reads/"${sample}".fastq.gz >> "${prodir}"/bash/jobs/"${sample}"_trim.job
 
 #   input command to trim raw reads
 echo 'echo 'Trimming "${sample}"'' >> "${prodir}"/bash/jobs/"${sample}"_trim.job
 
-echo 'bbduk.sh -Xmx512m \
+echo '${mcs}/programs/bbduk.sh -Xmx512m \
 in='"${prodir}"'/data/quantseq_reads/'"${sample}"'.fastq \
 out='"${prodir}"'/outputs/trimmed_reads/'"${sample}"'_trimmed.fastq \
 ref='"${prodir}"'/data/bbmap_resources/polyA.fa.gz,'"${prodir}"'/data/bbmap_resources/truseq_rna.fa.gz \
