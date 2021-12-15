@@ -194,16 +194,20 @@ taxa_color_seq <- function(physeq, taxa_rank) {
   glom <- tax_glom(physeq, taxrank = taxa_rank)
   psmelted <- psmelt(glom)
   psmelted[, taxa_rank] <- as.character(psmelted[ , taxa_rank])
-  psmelted[psmelted$Abundance < 0.01, taxa_rank] <- "<1% abundance"
+  # psmelted[psmelted$Abundance < 0.01, taxa_rank] <- "<1% abundance"
+  psmelted[psmelted$Abundance < 0.05, taxa_rank] <- "<5% abundance"
   # 
   taxa_rank_name <- sym(taxa_rank)
   taxa_colors_table <- psmelted %>% 
     dplyr::group_by({{ taxa_rank_name }}) %>% 
-    dplyr::summarise(cum_rel_ab = sum(Abundance)/48) %>% 
+    dplyr::summarise(cum_rel_ab = sum(Abundance)/length(Abundance)) %>% 
     dplyr::arrange(cum_rel_ab) %>% 
-    dplyr::filter({{ taxa_rank_name }} != "<1% abundance")
+    # dplyr::filter({{ taxa_rank_name }} != "<1% abundance")
+    dplyr::filter({{ taxa_rank_name }} != "<5% abundance")
+  
   # 
-  lowtaxa <- data.frame("<1% abundance", 0)
+  # lowtaxa <- data.frame("<1% abundance", 0)
+  lowtaxa <- data.frame("<5% abundance", 0)
   colnames(lowtaxa) <- colnames(taxa_colors_table)
   taxa_colors_df <- rbind(lowtaxa, taxa_colors_table)
   # 
@@ -220,7 +224,8 @@ taxa_barplot <- function(physeq, taxa_rank, taxa_levels, taxa_colors) {
   glom <- tax_glom(physeq, taxrank = taxa_rank)
   psmelted <- psmelt(glom)
   psmelted[, taxa_rank] <- as.character(psmelted[ , taxa_rank])
-  psmelted[psmelted$Abundance < 0.01, taxa_rank] <- "<1% abundance"
+  # psmelted[psmelted$Abundance < 0.01, taxa_rank] <- "<1% abundance" 
+  psmelted[psmelted$Abundance < 0.05, taxa_rank] <- "<5% abundance"
   psmelted[, taxa_rank] <- factor(psmelted[, taxa_rank], levels = rev(taxa_levels), ordered = TRUE)
   psmelted$Treatment <- factor(psmelted$Treatment, levels = c("Baseline", "Control", "Antibiotics", ordered = TRUE))
   
@@ -228,7 +233,7 @@ taxa_barplot <- function(physeq, taxa_rank, taxa_levels, taxa_colors) {
   barplot <- ggplot(data = psmelted, aes(x = Sample, y = Abundance, fill = psmelted[, taxa_rank]))
   barplot <- barplot +
     geom_bar(aes(), stat = "identity") +
-    facet_nested(. ~ Treatment + Gulf + Genotype, scales = "free_x", space = "free", switch = NULL) + # facet by Gulf too
+    facet_nested(. ~ Treatment + Genotype, scales = "free_x", space = "free", switch = NULL) + # facet by Gulf too
     scale_fill_manual(values = rev(taxa_colors$hex)) + # note that order is reversed
     ylab("Relative Abundance") +
     guides(fill = guide_legend(nrow = 10))
@@ -247,17 +252,56 @@ taxa_barplot <- function(physeq, taxa_rank, taxa_levels, taxa_colors) {
           legend.key.height = unit(5, "mm"))
   print(barplot)
   # modify facet strip colors - need longer vector to facet by Gulf
-  gt <- ggplotGrob(barplot)
-  strip_both <- which(grepl('strip-', gt$layout$name))
-  k <- 1
-  for (i in strip_both) {
-    j <- which(grepl('rect', gt$grobs[[i]]$grobs[[1]]$childrenOrder))
-    gt$grobs[[i]]$grobs[[1]]$children[[j]]$gp$fill <- cond_col_colors[k]
-    k <- k+1
-  }
-  # # draw gtable object
-  gp <- grid.draw(gt)
-  print(gp)
+  # gt <- ggplotGrob(barplot)
+  # strip_both <- which(grepl('strip-', gt$layout$name))
+  # k <- 1
+  # for (i in strip_both) {
+  #   j <- which(grepl('rect', gt$grobs[[i]]$grobs[[1]]$childrenOrder))
+  #   gt$grobs[[i]]$grobs[[1]]$children[[j]]$gp$fill <- cond_col_colors[k]
+  #   k <- k+1
+  # }
+  # # # draw gtable object
+  # gp <- grid.draw(gt)
+  # print(gp)
+}
+
+### Taxa barplot with replicate samples collapsed
+taxa_barplot_simple <- function(physeq, taxa_rank, taxa_levels, taxa_colors) {
+  glom <- tax_glom(physeq, taxrank = taxa_rank)
+  psmelted <- psmelt(glom)
+  psmelted[, taxa_rank] <- as.character(psmelted[ , taxa_rank])
+  # psmelted[psmelted$Abundance < 0.01, taxa_rank] <- "<1% abundance"
+  psmelted[psmelted$Abundance < 0.05, taxa_rank] <- "<5% abundance"  
+  psmelted[, taxa_rank] <- factor(psmelted[, taxa_rank], levels = rev(taxa_levels), ordered = TRUE)
+  psmelted$Treatment <- factor(psmelted$Treatment, levels = c("Baseline", "Control", "Antibiotics", ordered = TRUE))
+  # return(psmelted)
+  # all samples facetted according to treatment
+  barplot <- ggplot(data = psmelted, aes(x = Genotype, y = Abundance, fill = psmelted[, taxa_rank]))
+  barplot <- barplot +
+    geom_bar(aes(), stat = "identity", position = "fill") +
+    facet_nested(Treatment ~ Genotype, scales = "free", space = "free", switch = "y") + # facet by Gulf too
+    scale_fill_manual(values = rev(taxa_colors$hex)) + # note that order is reversed
+    scale_y_continuous(position = "right") +
+    ylab("Relative Abundance") +
+    guides(fill = guide_legend(nrow = 10))
+  barplot <- barplot +
+    theme(plot.title = element_text(size = 14),
+          axis.text.x = element_blank(),
+          axis.text.y = element_text(size = 12),
+          axis.ticks = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_text(size = 12),
+          strip.text.x = element_text(size = 10),
+          strip.text.y = element_text(size = 12),
+          strip.placement = "outside",
+          strip.background = element_rect(color = "white", fill = "white"),
+          # panel.border = element_rect(color = "white"),
+          legend.text = element_text(size = 10),
+          legend.title = element_blank(),
+          legend.position = "bottom",
+          legend.key.width = unit(6, "mm"),
+          legend.key.height = unit(5, "mm"))
+  print(barplot)
 }
 
 ### PCoA plot with spiders aesthetics
@@ -286,7 +330,7 @@ aldex.plot_gg <- function (x, ..., type = c("MW", "MA"), xlab = NULL, ylab = NUL
                            xlim = NULL, ylim = NULL,
                            rare = 0, cutoff = 0.1,
                            all.col = rgb(0, 0, 0, 0.2), called.col = "red", rare.col = "black",
-                           pointsize = 3,
+                           pointsize = 1.5,
                            thres.line.col = "darkgrey", test = "welch") 
 {
   type <- match.arg(type)
@@ -319,7 +363,7 @@ aldex.plot_gg <- function (x, ..., type = c("MW", "MA"), xlab = NULL, ylab = NUL
       ylabel <- expression("Median" ~ ~Log[2] ~ ~"btw-Condition diff")
     x$asv.type <- ifelse(x$rab.all < rare, "rare", ifelse(x$we.eBH < cutoff, "called", "all"))
     ggaldex_mw <- ggplot(data = x, aes(x = diff.win, y = diff.btw, color = asv.type)) +
-      geom_point(size = pointsize) +
+      geom_point(size = pointsize, show.legend = FALSE) +
       geom_abline(aes(intercept = 0, slope = 1), linetype = "dashed", color = thres.line.col) +
       geom_abline(aes(intercept = 0, slope = -1), linetype = "dashed", color = thres.line.col) +
       scale_x_continuous() +
@@ -336,7 +380,7 @@ aldex.plot_gg <- function (x, ..., type = c("MW", "MA"), xlab = NULL, ylab = NUL
       ylabel <- expression("Median" ~ ~Log[2] ~ ~"btw-Condition diff")
     x$asv.type <- ifelse(x$rab.all < rare, "rare", ifelse(x$we.eBH < cutoff, "called", "all"))
     ggaldex_ma <- ggplot(x, aes(x = rab.all, y = diff.btw, color = asv.type)) +
-      geom_point(size = pointsize) +
+      geom_point(size = pointsize, show.legend = TRUE) +
       scale_x_continuous() +
       scale_y_continuous() +
       scale_color_manual(name = "ASV Type", values = c(all.col, called.col, rare.col)) +
@@ -351,7 +395,7 @@ aldex_plot_gg <- function (x, ..., type = c("MW", "MA"), xlab = NULL, ylab = NUL
                            xlim = NULL, ylim = NULL,
                            rare = 0, cutoff = 0.1,
                            all.col = rgb(0, 0, 0, 0.2), called.col = "red", rare.col = "black",
-                           pointsize = 3,
+                           pointsize = 1.5,
                            thres.line.col = "darkgrey", test = "welch") 
 {
   type <- match.arg(type)
@@ -384,12 +428,20 @@ aldex_plot_gg <- function (x, ..., type = c("MW", "MA"), xlab = NULL, ylab = NUL
       ylabel <- expression("Median" ~ ~Log[2] ~ ~"btw-Condition diff")
     x$asv.type <- ifelse(x$rab.all < rare, "rare", ifelse(x$we.eBH < cutoff, "called", "all"))
     ggaldex_mw <- ggplot(data = x, aes(x = diff.win, y = diff.btw, color = asv.type)) +
-      geom_point(size = pointsize) +
+      geom_point(size = pointsize, show.legend = FALSE) +
       geom_abline(aes(intercept = 0, slope = 1), linetype = "dashed", color = thres.line.col) +
       geom_abline(aes(intercept = 0, slope = -1), linetype = "dashed", color = thres.line.col) +
       # add text labels to each point
-      geom_text_repel(data = x %>% filter(asv.type == "called"), aes(label = paste(Family, Species, sep = " - ")), size = 2) + 
-      scale_x_continuous(limits = c()) +
+      geom_text_repel(data = x %>% slice_min(diff.btw, n = 10),
+                      aes(label = paste(Family, Species, sep = " - ")),
+                      size = 2.5, max.overlaps = 20, box.padding = 0.35,
+                      show.legend = FALSE) + 
+      geom_text_repel(data = x %>% slice_max(diff.btw, n = 5),
+                      aes(label = paste(Family, Species, sep = " - ")),
+                      size = 2.5, max.overlaps = 20, box.padding = 0.35,
+                      show.legend = FALSE) + 
+      # %>% dplyr::filter(asv.type == "called")
+      scale_x_continuous(limits = c(0, 10), breaks = seq(0,10,2)) +
       scale_y_continuous() +
       scale_color_manual(name = "ASV Type", values = c(all.col, called.col, rare.col)) +
       xlab(xlabel) +
@@ -403,10 +455,17 @@ aldex_plot_gg <- function (x, ..., type = c("MW", "MA"), xlab = NULL, ylab = NUL
       ylabel <- expression("Median" ~ ~Log[2] ~ ~"btw-Condition diff")
     x$asv.type <- ifelse(x$rab.all < rare, "rare", ifelse(x$we.eBH < cutoff, "called", "all"))
     ggaldex_ma <- ggplot(x, aes(x = rab.all, y = diff.btw, color = asv.type)) +
-      geom_point(size = pointsize) +
+      geom_point(size = pointsize,  show.legend = TRUE) +
       # add text labels to each point
-      geom_text_repel(data = x %>% filter(asv.type == "called"), aes(label = paste(Family, Species, sep = " - ")),  size = 2) + 
-      scale_x_continuous() +
+      geom_text_repel(data = x %>% slice_min(diff.btw, n = 10),
+                      aes(label = paste(Family, Species, sep = " - ")),
+                      size = 2.5, max.overlaps = 20, box.padding = 0.35,
+                      show.legend = FALSE) + 
+      geom_text_repel(data = x %>% slice_max(diff.btw, n = 5),
+                      aes(label = paste(Family, Species, sep = " - ")),
+                      size = 2.5, max.overlaps = 20, box.padding = 0.35,
+                      show.legend = FALSE) + 
+      scale_x_continuous(limits = c(0, 10), breaks = seq(0,10,2)) +
       scale_y_continuous() +
       scale_color_manual(name = "ASV Type", values = c(all.col, called.col, rare.col)) +
       xlab(xlabel) +

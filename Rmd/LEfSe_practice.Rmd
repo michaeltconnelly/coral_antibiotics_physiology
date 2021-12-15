@@ -1,0 +1,96 @@
+---
+title: "LEfSe_practice"
+author: "Mike Connelly"
+date: "3/10/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "~/computing/projects/anti_phys")
+```
+
+```{r}
+data("spontaneous_colitis")
+# add prefix of ranks
+mm <- lefse(
+  spontaneous_colitis, 
+  norm = 1e6, 
+  class = "class", 
+  multicls_strat = TRUE
+)
+```
+```{r}
+head(marker_table(mm))
+```
+```{r}
+plot_ef_bar(mm, label_level = 1) +
+  scale_fill_manual(values = c("rag2" = "blue", "truc" = "red"))
+```
+
+```{r}
+?lefse()
+```
+```{r}
+sample_data(ps.AxC)
+mm2 <- lefse(ps.AxC, class = "Treatment",
+      multicls_strat = TRUE)
+#
+mm3 <- lefse(ps.AxC, class = "Gulf",
+      multicls_strat = TRUE)
+```
+```{r}
+lefse_bar_treatment <- plot_ef_bar(mm2, label_level = 1) +
+  scale_fill_manual(values = c("Control" = treatcolors[2], "Antibiotics" = treatcolors[3]))
+lefse_bar_treatment
+ggsave("./outputs/phyloseq_results/figures/lefse_bar_treatment.pdf", height = 30, width = 8.5, units = "in", device = "pdf")
+```
+
+## Baseline samples genotypic variation
+```{r baseline_lefse, warning=FALSE, message=FALSE}
+sample_data(ps_baseline)
+mm3 <- lefse(ps_baseline, class = "Gulf",
+      multicls_strat = TRUE)
+mm4 <- lefse(ps_baseline, class = "ITS2",
+      multicls_strat = TRUE)
+mm5 <- lefse(ps_baseline, class = "mtORF",
+      multicls_strat = TRUE)
+mm6 <- lefse(ps_baseline, class = "Location",
+      multicls_strat = TRUE)
+```
+
+```{r}
+lefse_bar_gulf <- plot_ef_bar(mm3, label_level = 1) +
+  scale_fill_manual(values = c("Chiriqui" = "orange", "Panama" = "blue"))
+lefse_bar_gulf
+# ggsave("./outputs/phyloseq_results/figures/lefse_bar_gulf.pdf", height = 11, width = 8.5, units = "in", device = "pdf")
+```
+```{r}
+lefse_bar_symbiont <- plot_ef_bar(mm4, label_level = 1) #+
+  # scale_fill_manual(values = c("Cladocopium" = "yellow", "Durusdinium" = "purple"))
+lefse_bar_symbiont
+ggsave("./outputs/phyloseq_results/figures/lefse_bar_baseline_symbiont_its2.pdf", height = 11, width = 8.5, units = "in", device = "pdf")
+```
+```{r}
+lefse_bar_mtorf <- plot_ef_bar(mm5, label_level = 1) #+
+  # scale_fill_manual(values = c("Type_1" = "red", "Type_3" = "blue"))
+lefse_bar_mtorf
+# ggsave("./outputs/phyloseq_results/figures/lefse_bar_baseline_symbiont_genus.pdf", height = 11, width = 8.5, units = "in", device = "pdf")
+```
+```{r}
+lefse_bar_mtorf <- plot_ef_bar(mm6, label_level = 1) #+
+  # scale_fill_manual(values = c("Type_1" = "red", "Type_3" = "blue"))
+lefse_bar_mtorf
+```
+
+## Antibiotics samples genotypic variation
+```{r}
+mm5 <- lefse(ps_antibiotics, class = "Genus",
+      multicls_strat = TRUE)
+```
+```{r}
+lefse_bar_symbiont <- plot_ef_bar(mm5, label_level = 1) +
+  scale_fill_manual(values = c("Cladocopium" = "yellow", "Durusdinium" = "purple"))
+lefse_bar_symbiont
+```
+

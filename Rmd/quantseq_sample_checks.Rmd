@@ -1,0 +1,90 @@
+---
+title: "quantseq_sample_checks"
+author: "Mike Connelly"
+date: "3/28/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "/Users/mikeconnelly/computing/projects/anti_phys")
+```
+
+```{r}
+library("tidyverse")
+```
+```{r genotypes_fragments}
+genotypes <- read_csv("data/genotypes.csv")
+#
+fragments <- read_csv("data/fragments.csv", col_types = cols(
+  Fragment_ID = col_character()))
+```
+```{r}
+sample_stats <- read_csv("./data/tagseq_samples_stats.csv")
+submission_info <- read_csv("./data/tagseq_submission_corrected.csv")
+```
+```{r}
+sequenced_samples <- sample_stats %>%
+  left_join(submission_info, by = "SAMPLE") %>% 
+  dplyr::rename("Fragment_ID" = `External ID`) %>%
+  left_join(fragments, by = "Fragment_ID") %>% 
+  left_join(genotypes, by = "Genotype")
+sequenced_samples <- sequenced_samples %>% 
+  mutate(Sample_ID = str_c(Genotype, Treatment, Fragment_ID, sep = "_"))
+```
+```{r}
+sample_key <- sequenced_samples %>%
+  select(SAMPLE, Sample_ID) %>% 
+  arrange(SAMPLE)
+sample_key_files <- sample_key %>% 
+  mutate(filename = str_c(Sample_ID, ".fastq.gz"))
+```
+
+```{r}
+sequenced_samples %>%
+  dplyr::group_by(Treatment) %>% 
+  count()
+```
+```{r}
+sequenced_samples %>%
+  group_by(Treatment, Gulf) %>% 
+  count()
+#
+sequenced_samples %>%
+  group_by(Treatment, mtORF) %>% 
+  count()
+# 
+sequenced_samples %>%
+  group_by(Genotype, Treatment) %>% 
+  count() %>% filter(n >= 3) %>% 
+  arrange(Genotype, desc(n))
+```
+Able to do within-genotype comparisons for PAN-35, PAN-78, PAN-79, PAN-83 and URA-51
+
+```{r}
+sequenced_genotypes <- sequenced_samples %>% filter(Genotype %in% c("PAN-35", "PAN-78", "PAN-79", "PAN-83", "URA-51"))
+
+sequenced_genotypes %>% 
+  group_by(Gulf, ITS2) %>% count()
+```
+```{r}
+sequenced_genotypes %>% 
+  group_by(Genotype, Gulf, mtORF, ITS2) %>%
+  summarise(mean_depth = mean(TOTAL_READS),
+            sd_depth = sd(TOTAL_READS))
+```
+Other samples
+```{r}
+`%notin%` <- Negate(`%in%`)
+
+meh_genotypes <- sequenced_samples %>% 
+  filter(Genotype %notin% c("PAN-35", "PAN-78", "PAN-79", "PAN-83", "URA-51"))
+unique(meh_genotypes$Genotype)
+
+meh_genotypes %>% 
+  group_by(Genotype, Treatment, Gulf, mtORF, ITS2) %>%
+  summarise(n = n(),
+            mean_depth = mean(TOTAL_READS),
+            sd_depth = sd(TOTAL_READS))
+```
+

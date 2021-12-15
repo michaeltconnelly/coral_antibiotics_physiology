@@ -1,0 +1,711 @@
+---
+title: "DHE_16s"
+author: "Benjamin Young"
+date: "07/12/2020"
+output: html_document
+---
+
+```{r Installing Pacakges}
+#BiocManager::install('dada2')
+#BiocManager::install('DECIPHER')
+#BiocManager::install('phyloseq')
+#BiocManager::install('dendextend')
+```
+
+```{r Loading Packages, include = F}
+library(dada2)
+library(phyloseq)
+library(vegan)
+library(tidyverse)
+library(dendextend)
+library(viridis)
+library(reshape2)
+library(DECIPHER)
+```
+
+```{r package verisons, include = F}
+packageVersion("dada2")
+packageVersion("phyloseq")
+packageVersion("vegan")
+packageVersion("tidyverse")
+packageVersion("dendextend")
+packageVersion("viridis")
+packageVersion("reshape2")
+```
+
+## 1. Primer trimming  
+  
+This is in bash using cutadapt  
+
+Sed command to rename from bagnumber-738_S122_L001_R2_001.fastq.gz to bagnumber-738_R2.fastq.gz (N.B it maintains the R1 and R2 needed for the paired end reads)  
+
+```{bash Checking length of raw reads folder}
+cd /Users/benyoung/Dropbox/PhD/Projects/DHE/NGS/16s/lane1_921/921_rr
+ls | wc -l
+
+cd /Users/benyoung/Dropbox/PhD/Projects/DHE/NGS/16s/lane2_925/925_rr
+ls | wc -l
+```
+
+```{bash removing usless info from filenames 921, include = F}
+# sed 's/\(bagnumber-[0-9]*\)_.*\(_R.\)_...\(\.fastq\.gz\)/\1\2\3/'
+cd /Users/benyoung/Dropbox/PhD/Projects/DHE/NGS/16s/lane1_921/921_rr
+SAMPLES=`ls|echo`
+
+for SAMPLES in *
+do FILES=`echo $SAMPLES | sed "s/\(APAL-[aA-zZ 0-9]*\)_S[0-9]*_L[0-9]*\(_R.\)_...\(\.fastq\.gz\)/\1\2\3/"`
+echo ${FILES}
+mv "${SAMPLES}" "${FILES}"
+done
+```
+
+```{bash removing usless info from filenames 925, include = F}
+# 4 file types here
+# 1. acer-C1baseline_S182_L001_R2_001.fastq.gz and apal-P6no-transmission-2_S168_L001_R2_001.fastq.gz
+# 2. connelly-Hw26c_S189_L001_R2_001.fastq.gz
+# 3. APAL-ML2173heatplaceboslurry17thaug_S9_L001_R2_001.fastq.gz
+# 4. smarcscens-inoc1-1_S131_L001_R1_001.fastq.gz, healty-slurry3_S145_L001_R1_001.fastq.gz, disease-slurry2-2_S141_L001_R1_001.fastq.gz
+
+# This sed d
+# sed "s/\([aA-zZ0-9-]*\)_S[0-9]*_L[0-9]*\(_R.\)_...\(\.fastq\.gz\)/\1\2\3/" does all in one go woooooooooooo
+
+cd /Users/benyoung/Dropbox/PhD/Projects/DHE/NGS/16s/lane2_925/925_rr
+SAMPLES=`ls|echo`
+
+for SAMPLES in *
+do FILES=`echo $SAMPLES | sed "s/\([aA-zZ0-9-]*\)_S[0-9]*_L[0-9]*\(_R.\)_...\(\.fastq\.gz\)/\1\2\3/"`
+echo ${FILES}
+mv "${SAMPLES}" "${FILES}"
+done
+```
+
+```{bash making a file with sample names 921, include = F}
+cd /Users/benyoung/Dropbox/PhD/Projects/DHE/NGS/16s/lane1_921/921_rr
+ls *_R1.fastq.gz | cut -f1 -d "_" > /Users/benyoung/Dropbox/PhD/Projects/DHE/NGS/16s/lane1_921/samples
+```
+
+```{bash making a file with sample names 925, include = F}
+cd /Users/benyoung/Dropbox/PhD/Projects/DHE/NGS/16s/lane2_925/925_rr
+ls *_R1.fastq.gz | cut -f1 -d "_" > /Users/benyoung/Dropbox/PhD/Projects/DHE/NGS/16s/lane2_925/samples
+```
+
+Thing to note here, it seems we dont have many primers in the reads. From some googling MiSeq machines, if set up properly, can omit the reads so therfore I have kept the untrimmed reads in relation to PCR products.  
+https://forum.qiime2.org/t/clarification-on-primers-are-a-portion-of-them-left-in-this-run/11684/4  
+
+```{bash PCR primer trimming loop 921, include = F}
+# makes the filename without R1 and R2 so can be used in loops 
+cd /Users/benyoung/Dropbox/PhD/Projects/DHE/NGS/16s/lane1_921/921_rr
+SAMPLES=`ls *_R1.fastq.gz | cut -f1 -d "_"`
+echo $SAMPLES
+
+cd /Users/benyoung/Dropbox/PhD/Projects/DHE/NGS/16s/lane1_921/
+mkdir /Users/benyoung/Dropbox/PhD/Projects/DHE/NGS/16s/lane1_921/921_trimmed
+/Users/benyoung/miniconda3/bin/cutadapt --version
+
+for sample in $SAMPLES
+do
+  echo "This is sample: $sample"
+  /Users/benyoung/miniconda3/bin/cutadapt -a GTGYCAGCMGCCGCGGTAA \
+  -A GGACTACNVGGGTWTCTAAT \
+  -o 921_trimmed/${sample}_R1_T.fastq.gz -p 921_trimmed/${sample}_R2_T.fastq.gz \
+  921_rr/${sample}_R1.fastq.gz 921_rr/${sample}_R2.fastq.gz \
+  >> cutadapt_primer_trimming_stats.txt 2>&1
+done
+```
+
+```{bash PCR primer trimming loop 925, include = F}
+# makes the filename without R1 and R2 so can be used in loops 
+cd /Users/benyoung/Dropbox/PhD/Projects/DHE/NGS/16s/lane2_925/925_rr
+SAMPLES=`ls *_R1.fastq.gz | cut -f1 -d "_"`
+echo $SAMPLES
+
+cd /Users/benyoung/Dropbox/PhD/Projects/DHE/NGS/16s/lane2_925
+mkdir /Users/benyoung/Dropbox/PhD/Projects/DHE/NGS/16s/lane2_925/925_trimmed
+/Users/benyoung/miniconda3/bin/cutadapt --version
+
+for sample in $SAMPLES
+do
+  echo "This is sample: $sample"
+  /Users/benyoung/miniconda3/bin/cutadapt -a GTGYCAGCMGCCGCGGTAA \
+  -A GGACTACNVGGGTWTCTAAT \
+  -o 925_trimmed/${sample}_R1_T.fastq.gz -p 925_trimmed/${sample}_R2_T.fastq.gz \
+  925_rr/${sample}_R1.fastq.gz 925_rr/${sample}_R2.fastq.gz \
+  >> cutadapt_primer_trimming_stats.txt 2>&1
+done
+```
+
+## 2. Quality trimming/filtering and Error Models   
+
+```{r Making variables 921, include = F}
+setwd("~/Dropbox/PhD/Projects/DHE/NGS/16s/lane1_921/")
+list.files()
+
+samples_921 <- scan("samples", what="character")
+
+fwd_reads_921 <- paste0(samples_921, "_R1_T.fastq.gz")
+rev_reads_921 <- paste0(samples_921, "_R2_T.fastq.gz")
+filt_fwd_reads_921 <- paste0(samples_921, "_R1_filt.fastq.gz")
+filt_rev_reads_921 <- paste0(samples_921, "_R2_filt.fastq.gz")
+```
+
+```{r Making variables 925, include = F}
+setwd("~/Dropbox/PhD/Projects/DHE/NGS/16s/lane2_925/")
+list.files()
+
+samples_925 <- scan("samples", what="character")
+
+fwd_reads_925 <- paste0(samples_925, "_R1_T.fastq.gz")
+rev_reads_925 <- paste0(samples_925, "_R2_T.fastq.gz")
+filt_fwd_reads_925 <- paste0(samples_925, "_R1_filt.fastq.gz")
+filt_rev_reads_925 <- paste0(samples_925, "_R2_filt.fastq.gz")
+```
+
+
+### 2a. Quality assesment and trimming
+
+```{r Quality plots 921, echo=F, fig.width=15}
+setwd("~/Dropbox/PhD/Projects/DHE/NGS/16s/lane1_921/921_trimmed/")
+plotQualityProfile(fwd_reads_921[1:5])
+plotQualityProfile(rev_reads_921[1:5])
+```
+
+```{r Quality plots 925, echo=F, fig.width=15}
+setwd("~/Dropbox/PhD/Projects/DHE/NGS/16s/lane2_925/925_trimmed/")
+plotQualityProfile(fwd_reads_925[1:5])
+plotQualityProfile(rev_reads_925[1:5])
+```
+
+```{r 921 trimming and filtering, include = F}
+setwd("~/Dropbox/PhD/Projects/DHE/NGS/16s/lane1_921/921_trimmed/")
+
+filtered_out_921 <-
+  filterAndTrim(
+    fwd_reads_921,
+    filt_fwd_reads_921,
+    rev_reads_921,
+    filt_rev_reads_921,
+    truncLen = c(210, 140), 
+    minLen = 100,
+    rm.phix = T,
+    trimLeft = 10
+  )
+```
+
+NB - lane 921 samples  has all reads removed
+
+```{r 925 trimming and filtering, include = F}
+setwd("~/Dropbox/PhD/Projects/DHE/NGS/16s/lane2_925/925_trimmed/")
+
+filtered_out_925 <-
+  filterAndTrim(
+    fwd_reads_925,
+    filt_fwd_reads_925,
+    rev_reads_925,
+    filt_rev_reads_925,
+    truncLen = c(210, 140), 
+    minLen = 100,
+    rm.phix = T,
+    trimLeft = 10
+  )
+```
+
+NB - lane 925 samples  had all reads removed
+
+Note here with the quality profiles one sample was not produced, need to therfore regenerate the filt_fwd_reads and filt_rev_reads so it works with donwstream steps.  
+
+```{bash 921 moving filt files to new folder}
+# cd /Users/benyoung/Dropbox/PhD/Projects/POR/NGS_data/16s/zipped_raw_Data/
+# mkdir filtered
+mkdir /Users/benyoung/Dropbox/PhD/Projects/DHE/NGS/16s/lane1_921/921_filt
+
+cd /Users/benyoung/Dropbox/PhD/Projects/DHE/NGS/16s/lane1_921/921_trimmed
+mv *filt.fastq.gz /Users/benyoung/Dropbox/PhD/Projects/DHE/NGS/16s/lane1_921/921_filt
+```
+
+```{bash 925 moving filt files to new folder}
+# cd /Users/benyoung/Dropbox/PhD/Projects/POR/NGS_data/16s/zipped_raw_Data/
+# mkdir filtered
+mkdir /Users/benyoung/Dropbox/PhD/Projects/DHE/NGS/16s/lane2_925/925_filt
+
+cd /Users/benyoung/Dropbox/PhD/Projects/DHE/NGS/16s/lane2_925/925_trimmed
+mv *filt.fastq.gz /Users/benyoung/Dropbox/PhD/Projects/DHE/NGS/16s/lane2_925/925_filt
+```
+
+```{bash 921 making new sample filename link, include = F}
+cd /Users/benyoung/Dropbox/PhD/Projects/DHE/NGS/16s/lane1_921/921_filt
+#SAMPLES=`ls *_R1_filt_.fastq.gz | cut -f1 -d "_"`
+ls *_R1_filt.fastq.gz | cut -f1 -d "_" > /Users/benyoung/Dropbox/PhD/Projects/DHE/NGS/16s/lane1_921/samples_aft_filt_921
+```
+
+```{bash 925 making new sample filename link, include = F}
+cd /Users/benyoung/Dropbox/PhD/Projects/DHE/NGS/16s/lane2_925/925_filt
+#SAMPLES=`ls *_R1_filt_.fastq.gz | cut -f1 -d "_"`
+ls *_R1_filt.fastq.gz | cut -f1 -d "_" > /Users/benyoung/Dropbox/PhD/Projects/DHE/NGS/16s/lane2_925/samples_aft_filt_925
+```
+
+```{r 921 Making variables, include = F}
+setwd("~/Dropbox/PhD/Projects/DHE/NGS/16s/lane1_921/")
+list.files()
+
+samples_921 <- scan("samples_aft_filt_921", what="character")
+
+filt_fwd_reads_921 <- paste0(samples_921, "_R1_filt.fastq.gz")
+filt_rev_reads_921 <- paste0(samples_921, "_R2_filt.fastq.gz")
+```
+
+```{r 925 Making variables, include = F}
+setwd("~/Dropbox/PhD/Projects/DHE/NGS/16s/lane2_925/")
+list.files()
+
+samples_925 <- scan("samples_aft_filt_925", what="character")
+
+filt_fwd_reads_925 <- paste0(samples_925, "_R1_filt.fastq.gz")
+filt_rev_reads_925 <- paste0(samples_925, "_R2_filt.fastq.gz")
+```
+
+Note here with the quality profiles one sample was not produced, need to therfore regenerate the filt_fwd_reads and filt_rev_reads so it works with donwstream steps. 
+
+```{r 921 length check, include false, include = F}
+length(filt_fwd_reads_921)
+length(fwd_reads_921)
+length(filt_rev_reads_921)
+length(rev_reads_921)
+```
+
+```{r 925 length check, include false, include = F}
+length(filt_fwd_reads_925)
+length(fwd_reads_925)
+length(filt_rev_reads_925)
+length(rev_reads_925)
+```
+
+
+```{r 921 re checking first ten, echo = F}
+setwd("~/Dropbox/PhD/Projects/DHE/NGS/16s/lane1_921/921_trimmed/")
+plotQualityProfile(fwd_reads_921[1:5])
+plotQualityProfile(rev_reads_921[1:5])
+setwd("~/Dropbox/PhD/Projects/DHE/NGS/16s/lane1_921/921_filt/")
+plotQualityProfile(filt_fwd_reads_921[1:5])
+plotQualityProfile(filt_rev_reads_921[1:5])
+```
+
+```{r 925 re checking first ten, echo = F}
+setwd("~/Dropbox/PhD/Projects/DHE/NGS/16s/lane2_925/925_trimmed/")
+plotQualityProfile(fwd_reads_925[1:5])
+plotQualityProfile(rev_reads_925[1:5])
+setwd("~/Dropbox/PhD/Projects/DHE/NGS/16s/lane2_925/925_filt/")
+plotQualityProfile(filt_fwd_reads_925[1:5])
+plotQualityProfile(filt_rev_reads_925[1:5])
+```
+
+
+```{r 921 Error model of data, include = F}
+setwd("~/Dropbox/PhD/Projects/DHE/NGS/16s/lane1_921/921_filt/")
+err_fwd_reads_921 <-
+  learnErrors(filt_fwd_reads_921, 
+              multithread = T, 
+              verbose = T)
+err_rev_reads_921 <-
+  learnErrors(filt_rev_reads_921, 
+              multithread = T, 
+              verbose = T)
+```
+
+```{r 925 Error model of data, include = F}
+setwd("~/Dropbox/PhD/Projects/DHE/NGS/16s/lane2_925/925_filt/")
+err_fwd_reads_925 <-
+  learnErrors(filt_fwd_reads_925, 
+              multithread = T, 
+              verbose = T)
+err_rev_reads_925 <-
+  learnErrors(filt_rev_reads_925, 
+              multithread = T, 
+              verbose = T)
+```
+
+
+### 2b. Error Models
+
+```{r 921 plotting error models, echho = F}
+plotErrors(err_fwd_reads_921, nominalQ = T)
+plotErrors(err_rev_reads_921, nominalQ = T)
+```
+
+```{r 925 plotting error models, echho = F}
+plotErrors(err_fwd_reads_925, nominalQ = T)
+plotErrors(err_rev_reads_925, nominalQ = T)
+```
+
+
+## 3. Dereplication  
+
+```{r 921 dereplication, include = F}
+setwd("~/Dropbox/PhD/Projects/DHE/NGS/16s/lane1_921/921_filt/")
+derep_fwd_921 <- derepFastq(filt_fwd_reads_921, verbose = T)
+derep_rev_921 <- derepFastq(filt_rev_reads_921, verbose = T)
+
+# the sample names in these objects are initially the file names of the samples, this sets them to the sample names for the rest of the workflow
+names(derep_fwd_921) <- samples_921
+names(derep_rev_921) <- samples_921
+```
+
+```{r 925 dereplication, include = F}
+setwd("~/Dropbox/PhD/Projects/DHE/NGS/16s/lane2_925/925_filt/")
+derep_fwd_925 <- derepFastq(filt_fwd_reads_925, verbose = T)
+derep_rev_925 <- derepFastq(filt_rev_reads_925, verbose = T)
+
+# the sample names in these objects are initially the file names of the samples, this sets them to the sample names for the rest of the workflow
+names(derep_fwd_925) <- samples_925
+names(derep_rev_925) <- samples_925
+```
+
+
+```{r}
+#rm(derep_fwd_401, derep_fwd_408, derep_rev_401, derep_rev_408)
+```
+
+## 4. Inferring ASVs  
+
+```{r 921 inferring ASVs, include = F}
+dada_fwd_921 <-
+  dada(
+    derep_fwd_921,
+    err = err_fwd_reads_921,
+    pool = "pseudo",
+    multithread = T,
+    verbose = T
+  )
+dada_rev_921 <-
+  dada(
+    derep_rev_921,
+    err = err_rev_reads_921,
+    pool = "pseudo",
+    multithread = T,
+    verbose = T
+  )
+```
+
+**921 Problem Samples** 
+fwd
+Sample 45 - 2 in 2 ....  
+Sample  142 - 1271 in 689  ....
+
+rev
+Sample 45 - 2 in 2 ....
+Sample  - 1271 in 618 ....
+
+```{r 925 inferring ASVs, include = F}
+dada_fwd_925 <-
+  dada(
+    derep_fwd_925,
+    err = err_fwd_reads_925,
+    pool = "pseudo",
+    multithread = T,
+    verbose = T
+  )
+dada_rev_925 <-
+  dada(
+    derep_rev_925,
+    err = err_rev_reads_925,
+    pool = "pseudo",
+    multithread = T,
+    verbose = T
+  )
+```
+
+**925 Problem Samples**  
+Fwd
+Sample 63 - 1056 in 578 ....
+Sample 119 - 20 in 12 ....
+
+Rev
+Sample 63 - 1056 in 540 ....
+Sample 119 - 20 in 12 ....
+
+## 5. Merging Fwd and Rev
+
+```{r 921 Merged Amplicons, include = F}
+merged_amplicons_921 <-
+  mergePairs(
+    dada_fwd_921,
+    derep_fwd_921,
+    dada_rev_921,
+    derep_rev_921,
+    trimOverhang = T,
+    minOverlap = 90,
+    verbose = T
+  )
+```
+
+```{r 921 Looking at Merged, include = F}
+# info if we want to look at whats been done/going on
+class(merged_amplicons_921)
+length(merged_amplicons_921) # each element is a sample
+names(merged_amplicons_921) # gives name of each element in the list
+
+# each element of the list is a dataframe that can be accessed and manipulated like any ordinary dataframe
+class(merged_amplicons_921$`APAL-HS1137ambientdiseaseslurryinitial`)
+
+# the names() function on a dataframe gives you the column names
+names(merged_amplicons_921$`APAL-HS1137ambientdiseaseslurryinitial`)
+```
+
+```{r 925 Merged Amplicons, include = F}
+merged_amplicons_925 <-
+  mergePairs(
+    dada_fwd_925,
+    derep_fwd_925,
+    dada_rev_925,
+    derep_rev_925,
+    trimOverhang = T,
+    minOverlap = 90,
+    verbose = T
+  )
+```
+
+```{r 925 Looking at Merged, include = F}
+# info if we want to look at whats been done/going on
+class(merged_amplicons_925)
+length(merged_amplicons_925) # each element is a sample
+names(merged_amplicons_925) # gives name of each element in the list
+
+# each element of the list is a dataframe that can be accessed and manipulated like any ordinary dataframe
+class(merged_amplicons_925$`healty-slurry3`)
+
+# the names() function on a dataframe gives you the column names
+names(merged_amplicons_925$`healty-slurry3`)
+```
+
+HERE
+
+## 6. Generating Count Table  
+
+```{r 921 Count table, include =F}
+seqtab_921 <- makeSequenceTable(merged_amplicons_921)
+
+class(seqtab_921)
+dim(seqtab_921)
+```
+
+```{r 925 Count table, include =F}
+seqtab_925 <- makeSequenceTable(merged_amplicons_925)
+
+class(seqtab_925)
+dim(seqtab_925)
+```
+
+## 7. Removing Chimeras  
+
+```{r 921 remove chimera}
+seqtab_nochim_921 <- removeBimeraDenovo(seqtab_921, verbose = T)
+```
+
+```{r 921 sum check}
+sum(seqtab_nochim_921)/sum(seqtab_921)
+```
+
+Identified 1662 bimeras out of 6395 input sequences  
+ chimera = 0.99 (2dp)  
+Barely lost any which is good in terms of abundance
+
+```{r 925 remove chimera}
+seqtab_nochim_925 <- removeBimeraDenovo(seqtab_925, verbose = T)
+```
+
+```{r 925 sum check}
+sum(seqtab_nochim_925)/sum(seqtab_925)
+```
+
+Identified 1913 bimeras out of 9554 input sequences
+ chimera = 0.96 (2dp)  
+Again, barely lost any which is good in terms of abundance
+
+## 8. Checking Counts throughout  
+
+```{r}
+## Need to fix the filtered out bit, dont know why it is not working. 
+#getN <- function(x) sum(getUniques(x))
+
+#summary_tab <-
+#  data.frame(
+#    row.names = samples,
+#    dada2_input = filtered_out[, 1],
+#    filtered = filtered_out[, 2],
+#    dada_f = sapply(dada_fwd, getN),
+#    dada_r = sapply(dada_rev, getN),
+#    merged = sapply(merged_amplicons, getN),
+#    nonchim = rowSums(seqtab_nochim),
+#    final_perc_reads_retained = round(rowSums(seqtab_nochim) /
+#                                        filtered_out[, 1] * 100, 1)
+#  )
+
+#View(summary_tab)
+#View(filtered_out)
+```
+
+
+## 9. Assigning Taxonomy
+
+```{r Downloading SILVA reference, include = F}
+setwd("~/Dropbox/PhD/Projects/DHE/NGS/16s/")
+## downloading DECIPHER-formatted SILVA v138 reference
+download.file(url="http://www2.decipher.codes/Classification/TrainingSets/SILVA_SSU_r138_2019.RData", destfile="SILVA_SSU_r138_2019.RData")
+
+## loading reference taxonomy object
+load("SILVA_SSU_r138_2019.RData")
+```
+
+```{r 921 Taxo Assign}
+dna_921 <- DNAStringSet(getSequences(seqtab_nochim_921))
+
+tax_info_921 <-
+  IdTaxa(
+    test = dna_921,
+    trainingSet = trainingSet,
+    strand = "both",
+    processors = NULL,
+    verbose = T
+  )
+```
+
+```{r 925 Taxo Assign}
+dna_925 <- DNAStringSet(getSequences(seqtab_nochim_925))
+
+tax_info_925 <-
+  IdTaxa(
+    test = dna_925,
+    trainingSet = trainingSet,
+    strand = "both",
+    processors = NULL,
+    verbose = T
+  )
+```
+
+
+## Standard Goods from Dada2
+
+```{r 921 DADA2 goods}
+asv_seqs_921 <- colnames(seqtab_nochim_921)
+asv_headers_921 <- vector(dim(seqtab_nochim_921)[2], mode = "character")
+
+for (i in 1:dim(seqtab_nochim_921)[2]) {
+  asv_headers_921[i] <- paste(">ASV", i, sep="_")
+}
+
+# making and writing out a fasta of our final ASV seqs:
+asv_fasta_921 <- c(rbind(asv_headers_921, asv_seqs_921))
+write(asv_fasta_921,
+      "~/Dropbox/PhD/Projects/DHE/NGS/16s/lane1_921/dada2_output/ASV_921.fa")
+
+# count table:
+asv_tab_921 <- t(seqtab_nochim_921)
+row.names(asv_tab_921) <- sub(">", "", asv_headers_921)
+write.table(
+  asv_tab_921,
+  "~/Dropbox/PhD/Projects/DHE/NGS/16s/lane1_921/dada2_output/ASVs_counts_921.tsv",
+  sep = "\t",
+  quote = F,
+  col.names = NA
+)
+
+  # tax table:
+  # creating table of taxonomy and setting any that are unclassified as "NA"
+ranks <-
+  c("domain",
+    "phylum",
+    "class",
+    "order",
+    "family",
+    "genus",
+    "species")
+asv_tax_921 <- t(sapply(tax_info_921, function(x) {
+  m <- match(ranks, x$rank)
+  taxa <- x$taxon[m]
+  taxa[startsWith(taxa, "unclassified_")] <- NA
+  taxa
+}))
+colnames(asv_tax_921) <- ranks
+rownames(asv_tax_921) <-
+  gsub(pattern = ">",
+       replacement = "",
+       x = asv_headers_921)
+
+write.table(
+  asv_tax_921,
+  "~/Dropbox/PhD/Projects/DHE/NGS/16s/lane1_921/dada2_output/ASVs_taxonomy_921.tsv",
+  sep = "\t",
+  quote = F,
+  col.names = NA
+)
+```
+
+```{r 925 DADA2 goods}
+asv_seqs_925 <- colnames(seqtab_nochim_925)
+asv_headers_925 <- vector(dim(seqtab_nochim_925)[2], mode = "character")
+
+for (i in 1:dim(seqtab_nochim_925)[2]) {
+  asv_headers_925[i] <- paste(">ASV", i, sep="_")
+}
+
+# making and writing out a fasta of our final ASV seqs:
+asv_fasta_925 <- c(rbind(asv_headers_925, asv_seqs_925))
+write(asv_fasta_925,
+      "~/Dropbox/PhD/Projects/DHE/NGS/16s/lane2_925/dada2_ouput/ASV_925.fa")
+
+# count table:
+asv_tab_925 <- t(seqtab_nochim_925)
+row.names(asv_tab_925) <- sub(">", "", asv_headers_925)
+write.table(
+  asv_tab_925,
+  "~/Dropbox/PhD/Projects/DHE/NGS/16s/lane2_925/dada2_ouput/ASVs_counts_925.tsv",
+  sep = "\t",
+  quote = F,
+  col.names = NA
+)
+
+  # tax table:
+  # creating table of taxonomy and setting any that are unclassified as "NA"
+ranks <-
+  c("domain",
+    "phylum",
+    "class",
+    "order",
+    "family",
+    "genus",
+    "species")
+asv_tax_925 <- t(sapply(tax_info_925, function(x) {
+  m <- match(ranks, x$rank)
+  taxa <- x$taxon[m]
+  taxa[startsWith(taxa, "unclassified_")] <- NA
+  taxa
+}))
+colnames(asv_tax_925) <- ranks
+rownames(asv_tax_925) <-
+  gsub(pattern = ">",
+       replacement = "",
+       x = asv_headers_925)
+
+write.table(
+  asv_tax_925,
+  "~/Dropbox/PhD/Projects/DHE/NGS/16s/lane2_925/dada2_ouput/ASVs_taxonomy_925.tsv",
+  sep = "\t",
+  quote = F,
+  col.names = NA
+)
+```
+
+Need to now join the ASV files to have one big one as we kept seperate for the error models 
+
+```{r 921 checking outputs}
+View(asv_tab_921)
+View(asv_tax_921)
+View(asv_fasta_921)
+```
+
+```{r 925 checking outputs}
+View(asv_tab_925)
+View(asv_tax_925)
+View(asv_fasta_925)
+```
+
+

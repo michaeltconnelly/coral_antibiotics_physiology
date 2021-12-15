@@ -4,12 +4,12 @@ author: "Mike Connelly"
 date: "3/30/2021"
 output: html_document
 ---
-
+## Setup directories and packages
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_knit$set(root.dir = "/Users/mikeconnelly/computing/projects/anti_phys")
 ```
-```{r packages}
+```{r packages, message = FALSE, warning = FALSE}
 library("tidyverse")
 library("purrr")
 library("respR") # devtools::install_github("januarharianto/respR")
@@ -17,8 +17,9 @@ library("respR") # devtools::install_github("januarharianto/respR")
 # library("modelr")
 # library("MASS")
 # library("gvlma")
+se = function(x) sd(x)/sum(!is.na(x))
 ```
-```{r colors}
+```{r colors, include=FALSE}
 #rename to named colors
 treatcolors <- c("lightblue", "dodgerblue", "seagreen1")
 #treatfills <- c()
@@ -30,29 +31,39 @@ genocolors <- c(genotype_colors$color, "grey")
 ```{r theme}
 theme_set(theme_bw())
 ```
-```{r fragments}
+## Import sample metadata
+```{r genotypes_fragments, include=FALSE}
+genotypes <- read_csv("data/genotypes.csv")
+#
 fragments <- read_csv("data/fragments.csv", col_types = cols(
   Fragment_ID = col_character()
 ))
+```
+```{r factors}
 # factor levels
 treatment_levels <- c("Baseline", "Control", "Antibiotics")
 sampling_levels <- c("Day 0", "Day 7")
-day_levels <- c("day2", "day3", "day4", "day5")
-genotypes <- read_csv("data/genotypes.csv")
-genotype_levels <- c("PAN-5", "PAN-10", "PAN-32", "PAN-34", "PAN-35", "PAN-37", "PAN-39", "PAN-41", "PAN-43","PAN-44", "PAN-78", "PAN-79", "PAN-83", "URA-51", NA)
+day_levels <- c("day1", "day2", "day3", "day4", "day5") # no day 1 measurements for respirometry
+genotype_levels <- c("PAN-05", "PAN-10", "PAN-32", "PAN-34", "PAN-35", "PAN-37", "PAN-39", "PAN-41", "PAN-43","PAN-44", "PAN-78", "PAN-79", "PAN-83", "URA-51", NA)
 gulf_levels <- c("Chiriqui", "Panama")
 loc_levels <- c("Uva", "Saboga", "Uraba")
-mtorf_levels <- c("Type_1", "Type_2", "Type_3", "unknown")
-sym_levels <- c("C1bc", "C1d", "D1", "D2", "unknown")
+mtorf_levels <- c("Type_1", "Type_3")
+sym_levels <- c("C1bc", "C1d", "D1")
 ```
-```{r fragment_mass}
+## Import and inspect fragment mass data
+```{r fragment_mass, include=FALSE}
 # read in fragment mass data
 mass <- read_csv("data/fragment_mass.csv", col_types = cols(
   Fragment_ID = col_character(),
   Mass = col_double()
 ))
+# calculate volume displaced by coral skeleton, remaining volume in wells
+mass <- mass %>% 
+  mutate(vol_disp_uL = signif(Mass*(1/2.93)*1000, 5),
+         vol_well_uL = 1700 - vol_disp_uL)
+# Aragonite density = 2.93 g/cm^3
 ```
-```{r fragment_mass_boxplot}
+```{r fragment mass boxplot}
 fragment_mass <- left_join(fragments, mass, by = "Fragment_ID")
 fragment_mass$Treatment <- factor(fragments$Treatment, levels = treatment_levels, ordered = TRUE)
 fragment_mass$Genotype <- factor(fragments$Genotype, levels = genotype_levels, ordered = TRUE)
@@ -68,15 +79,39 @@ fragment_mass_boxplot
 # ggsave("outputs/figures/fragment_mass_experiment_boxplot.pdf", fragment_mass_boxplot,  device = "pdf", height = 4, width = 10)
 # print(fragment_mass_boxplot)
 ```
-
+```{r treatment mass histogram}
+fragment_mass_histogram <- fragment_mass %>% 
+  filter(Treatment != "Baseline") %>%
+  ggplot(aes(Mass, fill = Treatment)) +
+  geom_histogram(binwidth = 0.01) +
+  facet_grid(Treatment ~ ., scales = "free") +
+  scale_x_continuous(limits = c(0,0.5)) +
+  scale_y_continuous(limits = c(0, 10), breaks = seq(0,10,2)) +
+  scale_fill_manual(values = treatcolors[2:3])
+fragment_mass_histogram
+# ggsave("outputs/figures/fragment_mass_experiment_histogram.pdf", fragment_mass_histogram,  device = "pdf", height = 4, width = 10)
+```
+```{r fragment mass summary statistics}
+fragment_mass %>% 
+  filter(Treatment != "Baseline") %>% 
+  group_by(Treatment, Genotype) %>%
+  summarize(mean = mean(Mass), 
+            se = se(Mass))
+```
+```{r fragment mass anova}
+fragment_mass <- fragment_mass %>% filter(Treatment != "Baseline")
+mass_anova <- aov(Mass ~ Treatment + Genotype + Treatment:Genotype, data = fragment_mass)
+summary(mass_anova)
+```
 ## Import plate fragment-position keys
-```{r plate_keys, message = FALSE}
+```{r plate_keys, include = FALSE}
 # Fragment positions in the 24-well plates were randominzed each day during media changes, and positions were maintained through the IPAM assessment, microscopy imaging, and microplate respirometry
 # Information about which fragments or blank wells were in which position needs to be imported and made to correspond with the appropriate AOI information (IPAM) and well position information (respirometry) in the imported source data
 
-# import IPAM area of interest (AOI) to fragment ID keys to later connect measurements to sample metadata
+# Import IPAM area of interest (AOI) to fragment ID keys to later connect measurements to sample metadata
 plate_keys <- list.files(path = "./data/plate_keys", pattern = "plate_key_d[[:digit:]]\\.csv", full.names = T)
-# check to ensure all files are present
+
+# Check to ensure all files are present
 plate_keys
 
 # Create lookup table for AOI_ID from Well_ID
@@ -85,6 +120,7 @@ wells_aoi <- c("A1" = 1, "A2" = 2, "A3" = 3, "A4" = 4, "A5" = 5, "A6" = 6,
                "C1" = 13, "C2" = 14, "C3" = 15, "C4" = 16, "C5" = 17, "C6" = 18,
                "D1" = 19, "D2" = 20, "D3" = 21, "D4" = 22, "D5" = 23, "D6" = 24)
 aoi_levels <- as.character(1:24)
+
 # Import all plate keys 
 plate_key_master <- plate_keys %>%
   map_dfr(read_csv) %>% 
@@ -92,63 +128,58 @@ plate_key_master <- plate_keys %>%
   arrange(Sample_ID) %>% 
   separate(col = Plate_Well_ID, into = c("Plate", "Well"), sep = "-")
 
-# add column that converts the well ID information into AOI for IPAM
+# Add column that converts the well ID information into AOI for IPAM
 plate_key_master$AOI <- as.character(unname(wells_aoi[plate_key_master$Well]))
 
-# rbind into one dataframe
+# Unite into one dataframe
 plate_key_master <- plate_key_master %>% 
   unite(AOI_ID, Plate, AOI, sep = "_", remove = FALSE) %>% 
   unite(AOI_ID_key, Meas_Day, AOI_ID, sep = "_", remove = FALSE) %>% 
   unite(Well_ID, Plate, Well, sep = "_", remove = FALSE) %>% 
   unite(Well_ID_key, Meas_Day, Well_ID, sep = "_", remove = FALSE) %>% 
   arrange(Well_ID_key)
+
+# Attach metadata from keys
+day_plate <- plate_key_master %>% 
+  filter(Meas_Day %in% c("day2", "day3", "day4", "day5")) %>% # no day 1 measurements for respirometry
+  arrange(Well_ID_key)
 ```
-
-I want to devise a way to import sample and well metadata to help analyse the rates... done!
-I will need to include sample polyp count, weight and/or volume displacement to standardize the rates
-It may be necessary to make even *smaller* fragments, like just the branch tips.
-I need to record the units that the respirometer is measuring in... or change them to match respR.
-
 ## Import respirometry data files
-```{r resp_files}
+```{r respiration data files}
 # ?import_file()
 # List all plate information files in the target import directory
 resp_data_files <- list.files(path = "./data/resp", pattern = "*.xlsx", full.names = T)
 # name files for easier parsing of path contents including measurement day (day1 - day7), plate number (plate1 - plate6), and date (MMDDYY)
 # example path: "./data/resp/day1_plate1_083120.xlsx
-resp_data_files
+# resp_data_files
 ```
-```{r plate_names}
+```{r plate names}
 plate_names <- gsub("./data/resp/", "", resp_data_files)
 plate_names <- gsub("_[0-9]{6}_Oxygen.xlsx", "", plate_names)
 ```
-```{r respR_import_daily}
-resp_day2 <- map(resp_data_files[1:6], import_file)
-resp_day3 <- map(resp_data_files[7:12], import_file)
-resp_day4 <- map(resp_data_files[13:18], import_file)
-resp_day5 <- map(resp_data_files[19:24], import_file)
+```{r respR import daily, include = FALSE}
+# resp_day2 <- map(resp_data_files[1:6], import_file)
+# resp_day3 <- map(resp_data_files[7:12], import_file)
+# resp_day4 <- map(resp_data_files[13:18], import_file)
+# resp_day5 <- map(resp_data_files[19:24], import_file)
 ```
-```{r respR_import_all}
+```{r respR import all, include = FALSE}
 resp_all <- map(resp_data_files, import_file) %>% set_names(plate_names)
 # check to see if data file names are included for each plate
-names(resp_all)
-# resp_all_df <- map_df(resp_data_files, import_file)
-# 
+# names(resp_all)
 ```
-```{r}
+```{r O2 units}
 unit_args()
 # O2 unit from the microplate respirometer instrument: "%"
 # Time unit: "s"/"m"
 # Output mass unit: "ug"
 ```
-
 ```{r choose_plate}
-# choose a plate for downstream inspection and analysis
+# choose a plate for downstream inspection and analysis of single plate rates
 plate <- resp_all[[2]]
 ```
-
 ## 24-channel plate plots
-```{r single_plate_24_channel}
+```{r single plate 24-channel}
 channel_plot <- plate %>% 
   filter(`Time/Min.` > 15) %>% # filter out time before 15 minutes, this is usually how long the plate takes to equilibrate
   dplyr::select(`Time/Min.`, A1:D6) %>% 
@@ -159,7 +190,7 @@ channel_plot <- plate %>%
   geom_point(aes(color = Well))
 channel_plot
 ```
-```{r daily_plates_24-channel}
+```{r daily plates 24-channel}
 pdf("./outputs/figures/day5_plates_24-channel.pdf")
 for (i in seq_along(resp_day5)) {
 plate <- resp_day5[[i]]
@@ -179,10 +210,8 @@ print(channel_plot)
 }
 dev.off()
 ```
-```{r}
+```{r create tidy data frame}
 resp_all_df <- bind_rows(resp_all, .id = "id") %>% separate(id, into = c("day", "plate"), sep = "_")
-```
-```{r all_plates_24-channel}
 resp_all_df_tidy <- resp_all_df %>% 
   # filter(`Time/Min.` > 15) %>% # filter out time before 15 minutes, this is usually how long the plate takes to equilibrate
   # filter(`Time/Min.` < 60) %>% 
@@ -190,14 +219,17 @@ resp_all_df_tidy <- resp_all_df %>%
   pivot_longer(cols = A1:D6,
                names_to = "Well",
                values_to = "pct_oxygen") 
+```
+```{r all plates 24-channel}
 # plot all plates colored by well position
 raw_data_plot <- resp_all_df_tidy %>% 
   ggplot(aes(x = `Time/Min.`, y = pct_oxygen)) +
   geom_point(aes(color = Well), size = 0.05) +
   facet_grid(plate ~ day, switch = "y")
-ggsave("./outputs/physio/respR/figures/raw_data_plates.pdf", raw_data_plot, height = 6, width = 10)
+print(raw_data_plot)
+# ggsave("./outputs/physio/respR/figures/raw_data_plates.pdf", raw_data_plot, height = 6, width = 10)
 ```
-```{r all_plates_24-channel_metadata}
+```{r all plates 24-channel metadata}
 resp_all_df_tidy_meta <- resp_all_df_tidy %>% 
   mutate(plate_num = str_extract(plate, "[[:digit:]]"),
          Well_ID_key = str_c(day, plate_num, Well, sep = "_")) %>% 
@@ -205,33 +237,39 @@ resp_all_df_tidy_meta <- resp_all_df_tidy %>%
   left_join(fragments, by = "Fragment_ID") %>%
   left_join(mass, by = "Fragment_ID") %>% 
   left_join(genotypes, by = "Genotype")
-
+```
+```{r all plates 24-channel plots}
 # plot all plates colored by treatment
 raw_data_plot_treatment <- resp_all_df_tidy_meta %>% 
+  filter(`Time/Min.`> 15 & `Time/Min.` < 45) %>% 
+  filter(!is.na(Treatment)) %>% 
   ggplot(aes(x = `Time/Min.`, y = pct_oxygen)) +
   geom_point(aes(color = Treatment), size = 0.05) +
   scale_color_manual(values = c(treatcolors[3], treatcolors[2], "darkgrey")) +
   facet_grid(plate ~ day, switch = "y")
-ggsave("./outputs/physio/respR/figures/raw_data_plates_treatment.pdf", raw_data_plot_treatment, height = 6, width = 10)
+print(raw_data_plot_treatment)
+# ggsave("./outputs/physio/respR/figures/raw_data_plates_treatment.pdf", raw_data_plot_treatment, height = 6, width = 10)
 
 # plot all plates colored by fragment mass
 raw_data_plot_mass <- resp_all_df_tidy_meta %>% 
+  filter(`Time/Min.`> 15 & `Time/Min.` < 45) %>% 
+  filter(!is.na(Treatment)) %>% 
   ggplot(aes(x = `Time/Min.`, y = pct_oxygen)) +
   geom_point(aes(color = Mass), size = 0.05) +
   facet_grid(plate ~ day, switch = "y")
-ggsave("./outputs/physio/respR/figures/raw_data_plates_mass.pdf", raw_data_plot_mass, height = 6, width = 10)
+print(raw_data_plot_mass)
+# ggsave("./outputs/physio/respR/figures/raw_data_plates_mass.pdf", raw_data_plot_mass, height = 6, width = 10)
 ```
-
-
 ## respR rate analysis
 ### Background respiration rate analysis
 I need to calculate the background respiration rate for each plate on each day. This is also important because the blank wells appear to be gaining oxygen, so the seals may be imperfect and this requires correction.
 
 I have the information for which wells are blanks in each run... how do I incorporate this into the rate calculation functions? Or do I do this after the rates are calculated?
-```{r}
-# calc_rate.bg()
-```
 
+```{r}
+?calc_rate.bg()
+```
+### Single plate rate analysis
 ```{r respR_single_plate}
 # Use plate selected above
 # Create empty data frame to hold output from rate calculation loop
@@ -260,7 +298,8 @@ rates_frame[i-2, 2] <- rate$output[1]
 rates_list[i-2] <- rate
 }
 ```
-```{r respR_plate_rate_functions}
+### Multiple plate rate analysis
+```{r respR plate rate functions}
 # Create functions that calculate the fragment oxygen consumption rate for each well of each plate on any given day
 # Different versions for calc_rate() versus auto_rate() commands
 plate_resp_window <- function(plate) {
@@ -269,15 +308,18 @@ rates_frame <- data.frame("Well" = vector(), "rate" = numeric())
 # loop through rate calculation steps 
 for (i in 3:26) {
 rate <- plate %>%
-  # filter(`Time/Min.` > 20) %>% # filter out time before 20 minutes, this is usually how long the plate takes to equilibrate
+  # filter(`Time/Min.` > 20 ) %>% # filter before 15 minutes, usually how long plate takes to equilibrate
+   # filter(`Time/Min.` < 45) %>% # filter after 45 minutes, usually some wells below accepted O2 minimum
   inspect(time = 2, oxygen = i) %>%
-  calc_rate(from = 20, to = 45, by = "time") %>% # calculate rate bewteen 20 and 45 minutes
+  calc_rate(from = 15, to = 45, by = "time") %>% # calculate rate between 15 and 45 minutes
+  # calc_rate(from = 90, to = 80, by = "o2") %>% # calculate rate between 90% and 80% oxygen saturation
   print()  %>%   # just a quick preview
    # Incorporate background rate detection into the analysis
   convert_rate(o2.unit = "%",
                time.unit = "min", 
-               output.unit = "ug/m", 
-               volume = 0.6, S = 35, t = 26, P = 0.977)
+               output.unit = "umol/min", 
+               volume = 1.7*10^-3, S = 35, t = 26, P = 0.977)
+   # Incorporate volume correction into the analysis
 #
 rates_frame[i-2, 1] <- names(wells_aoi[i-2])
 rates_frame[i-2, 2] <- rate$output[1]
@@ -292,15 +334,17 @@ rates_frame <- data.frame("Well" = vector(), "rate" = numeric())
 # loop through rate calculation steps 
 for (i in 3:26) {
 rate <- plate %>%
-  filter(`Time/Min.` > 20) %>% # filter out time before 20 minutes, this is usually how long the plate takes to equilibrate
+  filter(`Time/Min.` > 15) %>% # filter before 15 minutes, usually how long plate takes to equilibrate
+  filter(`Time/Min.` < 45) %>% # filter after 45 minutes, usually some wells below accepted O2 minimum 
   inspect(time = 2, oxygen = i) %>%
   auto_rate() %>% # automatically determine most linear segment
   print()  %>%   # just a quick preview
    # Incorporate background rate detection into the analysis
   convert_rate(o2.unit = "%",
                time.unit = "min",
-               output.unit = "ug/m",
-               volume = 0.6, S = 35, t = 26, P = 0.977)
+               output.unit = "umol/min",
+               volume = 1.7*10^-3, S = 35, t = 26, P = 0.977)
+   # Incorporate volume correction into the analysis
 #
 rates_frame[i-2, 1] <- names(wells_aoi[i-2])
 rates_frame[i-2, 2] <- rate$output[1]
@@ -310,15 +354,25 @@ return(rates_frame)
 }
 ```
 ### Calculate respiration rates for all plates
-```{r respR_calculate_rates}
-# Apply rate calculation function to all plates, returns oxygen consumption rates in units of migrograms O2 per minute.
-rates_frame_auto_mapped <- resp_all %>%
-  map_dfr(plate_resp_auto)
-# 
+```{r respR calculate rates, include = FALSE}
+# Apply rate calculation function to all plates, returns oxygen consumption rates in units of micromoles O2 per minute.
+# Becker & Silbiger 2020 P. acuta dark respiration rates (umol O2/cm^2/hour)
+# 0.43±0.027 0.54±0.020 0.48±0.036 0.48±0.014 0.48±0.019 0.60±0.040
+pdf("./outputs/physio/respR/figures/window_rate_QC.pdf")
 rates_frame_window_mapped <- resp_all %>%
   map_dfr(plate_resp_window)
+dev.off()
+#
+pdf("./outputs/physio/respR/figures/auto_rate_QC.pdf")
+rates_frame_auto_mapped <- resp_all %>%
+  map_dfr(plate_resp_auto)
+dev.off()
+# 
 ```
-
+```{r choose rates}
+rates_frame_auto_mapped_2 <- rates_frame_auto_mapped
+rates_frame_auto_mapped <- rates_frame_window_mapped
+```
 ```{r sample_metadata_rates}
 # attach metadata from keys
 day_plate <- plate_key_master %>% 
@@ -329,70 +383,95 @@ rates_frame_auto_key <- cbind(rates_frame_auto_mapped, day_plate[,1:8])
 rates_frame_auto_meta <- rates_frame_auto_key %>%
   left_join(fragments, by = "Fragment_ID") %>%
   left_join(mass, by = "Fragment_ID") %>% 
-  left_join(genotypes, by = "Genotype") %>% 
-  mutate(rate_norm = -1*(rate / Mass))
-#
+  left_join(genotypes, by = "Genotype") 
+# 
 rates_frame_auto_meta$Treatment <- factor(rates_frame_auto_meta$Treatment, levels = treatment_levels, ordered = TRUE)
 rates_frame_auto_meta$Genotype <- factor(rates_frame_auto_meta$Genotype, levels = genotype_levels, ordered = TRUE)
 rates_frame_auto_meta$Meas_Day <- factor(rates_frame_auto_meta$Meas_Day, levels = day_levels, ordered = TRUE)
 ```
 
 ## Inspection and exploratory analysis of respiration rates
-### Blank well rates
-```{r blank_rates}
+```{r blank and fragment rates}
 rates_frame_blank <- rates_frame_auto_meta %>%
-  filter(Sample_ID == "b")
+  filter(Sample_ID == "b") %>% 
+  mutate(rate = rate*-1)
+#
+rates_frame_samples <- rates_frame_auto_meta %>%
+  filter(Sample_ID != "b") %>% 
+  mutate(rate = rate*-1)
+```
+### Background rates (blank wells)
+```{r blank rates exploration}
+rates_frame_blank %>% 
+    ggplot(aes(Meas_Day, (rate))) +
+  geom_violin() + geom_point() 
 
 rates_frame_blank %>% 
-    ggplot(aes(Meas_Day, (rate)*-1)) +
-  geom_violin() + geom_point() +
-  coord_cartesian(ylim = c(-15, 0))
+    ggplot(aes(Plate, (rate))) +
+  geom_violin() + geom_point()
 
 rates_frame_blank %>% 
-    ggplot(aes(Plate, (rate)*-1)) +
-  geom_violin() + geom_point() +
-  coord_cartesian(ylim = c(-15, 0))
+    ggplot(aes(Well, (rate))) +
+  geom_boxplot() + geom_point() 
 
 rates_frame_blank %>% 
-    ggplot(aes(Well, (rate)*-1)) +
+    ggplot(aes(Plate, (rate))) +
   geom_boxplot() + geom_point() +
-  coord_cartesian(ylim = c(-15, 0))
-
-rates_frame_blank %>% 
-    ggplot(aes(Plate, (rate)*-1)) +
-  geom_boxplot() + geom_point() +
-  facet_grid(~ Meas_Day) + 
-  coord_cartesian(ylim = c(-15, 0))
+  facet_grid(~ Meas_Day) 
 # ggsave("./outputs/physio/respR/figures/blanks_boxplots.pdf")
 ```
-```{r daily_rates_qc}
-rates_frame_samples <- rates_frame_auto_meta %>%
-  filter(Sample_ID != "b")
+```{r summarize background rates}
+# Calculate average background rate for each plate on each day
+plate_bg_rates <- rates_frame_blank %>% 
+  group_by(Meas_Day, Plate) %>% 
+  summarise(mean_bg_rate = mean(rate),
+            se_bg_rate = se(rate)) %>% 
+  unite(Plate_key, Meas_Day, Plate, sep = "_", remove = FALSE)
+#
+plate_bg_rates %>% 
+  ggplot(aes(Plate, mean_bg_rate)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = mean_bg_rate-se_bg_rate, ymax = mean_bg_rate+se_bg_rate), width = 0.1, color = "red") +
+  facet_grid(~ Meas_Day)
+```
 
+### Fragment metabolic rates
+```{r fragment rates exploration}
 rates_frame_samples %>% 
-  ggplot(aes(Well, (rate)*-1)) +
+  ggplot(aes(Well, (rate))) +
   geom_boxplot()
 
 rates_frame_samples %>% 
-  ggplot(aes(Well, (rate)*-1)) +
+  ggplot(aes(Well, (rate))) +
   geom_boxplot() +
   facet_grid( ~Meas_Day)
 
 rates_frame_samples %>% 
-  ggplot(aes(Plate, (rate)*-1)) +
+  ggplot(aes(Plate, (rate))) +
   geom_boxplot()
 
 rates_frame_samples %>% 
-  ggplot(aes(Plate, (rate)*-1)) +
+  ggplot(aes(Plate, (rate))) +
   geom_boxplot() +
   facet_grid(~ Meas_Day)
 ggsave("./outputs/physio/respR/figures/samples_inspect_boxplots.pdf")
 ```
+```{r}
+# Vizualize plate background rates along with fragment rate distribution
+  ggplot(data = plate_bg_rates, aes(Plate, mean_bg_rate)) +
+  geom_boxplot(data = rates_frame_samples, aes(Plate, rate)) +
+  geom_point(data = plate_bg_rates,
+             aes(Plate, mean_bg_rate), color = "red", size = 0.1) +
+  geom_errorbar(data = plate_bg_rates,
+                aes(ymin = mean_bg_rate-se_bg_rate, ymax = mean_bg_rate+se_bg_rate), width = 0.1, color = "red") +
+  facet_grid(~ Meas_Day)
+```
 
 ```{r daily_raw_rates_genotype}
-daily_rates_boxplot <- rates_frame_auto_meta %>% 
+daily_rates_boxplot <- rates_frame_samples %>% 
+  filter(Sample_ID != "b") %>% 
   filter(Meas_Day == "day5") %>% 
-  ggplot(aes(Genotype, (rate)*-1, fill = Genotype)) +
+  ggplot(aes(Genotype, rate, fill = Genotype)) +
   geom_boxplot(aes(color = Treatment)) +
   geom_point(shape = 21) +
   # ylim(c(0.0, 0.8)) +
@@ -400,70 +479,161 @@ daily_rates_boxplot <- rates_frame_auto_meta %>%
   scale_color_manual(values = treatcolors[2:3]) +
   ylab("raw oxygen consumption rate (ug/min)")
 daily_rates_boxplot
-ggsave("./outputs/figures/daily_rates_boxplot_day5.pdf", daily_rates_boxplot, device = "pdf", height = 5, width = 10)
+# ggsave("./outputs/figures/daily_rates_boxplot_day5.pdf", daily_rates_boxplot, device = "pdf", height = 5, width = 10)
 ```
 
-How do I normalize the rates for each individual microfragment? I can use fragment mass to start. 
-How will these rates be affected by genotypic differences in morphology, density, etc.?
+### Apply background rate correction to fragment metabolic rates
+```{r}
+rates_frame_samples <- rates_frame_samples %>% 
+  mutate(raw_rate = rate) %>% 
+  unite(Plate_key, Meas_Day, Plate, sep = "_", remove = FALSE) %>% 
+  full_join(plate_bg_rates, by = "Plate_key") %>% 
+  mutate(rate = raw_rate + mean_bg_rate) %>% 
+  select(-Meas_Day.y, -Plate.y) %>% dplyr::rename(Meas_Day = Meas_Day.x, Plate = Plate.x)
+```
+
+### Volume displacement correction
+I also need to normalize according to fragment volume displacement to standardize oyxgen consumption rates.
+```{r}
+median(mass$Mass)
+mean(mass$Mass)
+# median mass 0.140035 g
+# mean mass 0.147097 g
+```
+
+### Metabolic rate normalization to fragment mass
+```{r wam mass rate correlation}
+# Calculate residuals for each fragment from log(rate) ~ log(mass) linear model 
+wam_model <- lm(log10(rates_frame_samples$rate)~log10(rates_frame_samples$Mass))
+wam_model$coefficients
+# (Intercept)   log10(rates_frame_samples$Mass) - scaling coefficient for metabolic rate normalization
+# -2.4051988    0.6068693
+#
+wam_mass <- summary(wam_model)
+wam_mass
+#
+wam_residuals <- wam_mass$residuals
+rates_frame_samples$rate_mass_residual <- wam_residuals
+```
+
+```{r visualize wam model}
+rates_frame_samples %>% 
+  ggplot(aes(log10(Mass), log10(rate))) +
+  geom_point(aes(fill  = Genotype), shape = 21) +
+  geom_abline(slope = wam_model$coefficients[2], intercept = wam_model$coefficients[1]) +
+  # ylim(c(0.0, 0.8)) +
+  scale_fill_manual(values = genocolors)
+#
+rates_frame_samples %>% 
+  ggplot(aes(log10(Mass), log10(rate))) +
+  geom_point(aes(fill  = Treatment), shape = 21) +
+  geom_abline(slope = wam_model$coefficients[2], intercept = wam_model$coefficients[1]) +
+  # ylim(c(0.0, 0.8)) +
+  scale_fill_manual(values = treatcolors[2:3])
+#
+rates_frame_samples %>% 
+  dplyr::group_by(Fragment_ID) %>% 
+  dplyr::mutate(mean_lograte = mean(log10(rate)),
+         se_lograte = se(log10(rate))) %>%
+  ggplot(aes(log10(Mass), mean_lograte)) +
+  geom_smooth(method = "lm", fullrange = FALSE, se = FALSE, color = "black") +
+  # geom_abline(slope = wam_model$coefficients[2], intercept = wam_model$coefficients[1]) +
+  geom_errorbar(aes(ymin=mean_lograte-se_lograte,
+                    ymax=mean_lograte+se_lograte,
+                    color = Genotype), width = 0.01) +
+  geom_point(aes(fill  = Treatment), shape = 21) +
+  # ylim(c(0.0, 0.8)) +
+  scale_fill_manual(values = treatcolors[2:3]) +
+  scale_color_manual(values = genocolors) # + 
+  # facet_wrap(~Genotype)
+#model line geom_abline to stop at bounds of samples
+# ggsave("./outputs/figures/logM_logRate_regression-model.pdf", device = "pdf", height = 5, width = 10)
+```
+```{r visualize wam residuals}
+rates_frame_samples %>% 
+  group_by(Fragment_ID) %>% 
+  dplyr::mutate(mean_residual = mean(rate_mass_residual),
+         se_residual = se(rate_mass_residual)) %>% 
+  ggplot(aes(Mass, mean_residual)) +
+  geom_abline(slope = 0, intercept = 0) +
+  geom_errorbar(aes(ymin=mean_residual-se_residual,
+                    ymax=mean_residual+se_residual,
+                    color = Genotype), width = 0.01) +
+  geom_point(aes(fill  = Treatment), shape = 21) +
+  # ylim(c(0.0, 0.8)) +
+  scale_fill_manual(values = treatcolors[2:3]) +
+  scale_color_manual(values = genocolors) + 
+  facet_grid(~Treatment)
+# ggsave("./outputs/figures/logM_logRate_regression-model_residuals.pdf", device = "pdf", height = 5, width = 10)
+```
+
+
+How do I normalize the rates for each individual microfragment based on the model residuals? 
+
+```{r rate_mass_normalization}
+# Allometric scaling of metabolic rate
+# MR = aM^b
+# model-adjusted scaling coefficient (b) = 0.493
+# scale mass to median fragment mass (M) = 0.140035 g
+# rates_frame_auto_meta$mean_mass <- mean(rates_frame_auto_meta$Mass, na.rm = TRUE)
+
+rates_frame_samples <- rates_frame_samples %>%
+  mutate(mass_ratio = abs(Mass/0.140035), # rates scaled to median fragment mass
+         rate_norm = (rate / Mass),
+         rate_norm_res = (rate * mass_ratio))
+# Rate normalization by fragment mass
+# beta assumed 1
+# https://storage.googleapis.com/plos-corpus-prod/10.1371/journal.pone.0130303/1/pone.0130303.s002.pdf?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=wombat-sa%40plos-prod.iam.gserviceaccount.com%2F20210422%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20210422T183331Z&X-Goog-Expires=3600&X-Goog-SignedHeaders=host&X-Goog-Signature=6d2d68c083dc9b73c937b4168b221abb08b4ef72ed15330629e16d684168b9425f8c298ccea6618e66c9a920087097f07cdfd6d73055912671e5a5d7dae152053785c46604f23a3ed33bb8caaa5341254865633952449256c1cba3a0c6a5bd8ff4740ca8d3aef2d121da9af8c3a12b6b8998f173a9d1525ad837d24ced26a6348a1b22df6823d85bf8b7ff85bb62f8d20a8c01a109e97d1fe65aade12418455b89aa5ab6a90f1ae648f9abeb85cfe837d77b21a794af742359d1b70a316cf548fa1fe0d6dfad3356bfdd4572ddb4d53cac6e1dcdcb4a4636375e5d16ddf3b0b68067bfd4dca4b4abf85710a5a19386516f873567c2894554077a9be8dc501ce1
+rates_frame_samples %>% 
+  summarise(mean_rate = mean(rate),
+            se_rate = se(rate))
+```
+If M = aWb
+Then
+M/W =aWb /W
+and thus
+M/W = a(Wb * W-1)
+= M/W = aW(b-1)
+Log M/W = a + (b-1) LogW
+
+### Exploratory vizualization of mass-normalized rates
 ```{r daily_normalized_rates_genotype}
-daily_norm_rates_boxplot <- rates_frame_auto_meta %>% 
+daily_norm_rates_boxplot <- rates_frame_samples %>% 
   filter(Meas_Day == "day5") %>% 
-  filter(Genotype != "NA") %>% 
-  ggplot(aes(Genotype, rate_norm, fill = Genotype)) +
+  ggplot(aes(Genotype, rate_norm_res, fill = Genotype)) +
   geom_boxplot(aes(color = Treatment)) +
   geom_point(shape = 21) +
   # ylim(c(0.0, 0.8)) +
   scale_fill_manual(values = genocolors) + 
   scale_color_manual(values = treatcolors[2:3]) +
-  ylab("mass-normalized oxygen consumption rate (ug/min/g)")
+  ylab("mass-normalized oxygen consumption rate (umol/min/g)")
 daily_norm_rates_boxplot
 # ggsave("./outputs/figures/daily_norm_rates_boxplot_day5.pdf", daily_norm_rates_boxplot, device = "pdf", height = 5, width = 10)
 ```
-
 ```{r progression_normalized_rates}
-rates_frame_auto_meta %>% 
+rates_frame_samples %>% 
   filter(Genotype != "NA") %>% 
-  ggplot(aes(Genotype, rate_norm, fill = Genotype)) +
+  ggplot(aes(Genotype, rate_norm_res, fill = Genotype)) +
   geom_boxplot(aes(color = Treatment)) +
   geom_point(shape = 21) +
-  coord_cartesian(ylim = c(0, 400)) +
+  # coord_cartesian(ylim = c(0, 400)) +
   facet_grid(Meas_Day~.) +
   scale_fill_manual(values = genocolors) + 
   scale_color_manual(values = treatcolors[2:3]) +
-  ylab("mass-normalized oxygen consumption rate (ug/min/g)")
+  ylab("mass-normalized oxygen consumption rate (umol/min/g)")
 ```
-
 ```{r}
-gulf_progression_boxplot <- rates_frame_auto_meta %>% 
-  filter(!is.na(Fragment_ID)) %>%
-  # filter(Gulf == "Chiriqui") %>%
-  # filter(Gulf == "Panama") %>%
-  ggplot(aes(Meas_Day, rate_norm)) +
-  geom_boxplot(aes(fill = Genotype, color = Treatment)) +
-  geom_point(aes(color = Treatment)) +
-  geom_path(aes(group = Fragment_ID)) +
-  facet_wrap(~Genotype + Treatment) +
-  # facet_grid(Treatment~.)+
-  scale_fill_manual(values = genocolors) + 
-  scale_color_manual(values = treatcolors[2:3])
-gulf_progression_boxplot
-# ggsave("./outputs/figures/gulf_respiration_boxplot.pdf", height = 8, width = 10, device = "pdf")
-```
-
-```{r}
-rates_geno <- rates_frame_auto_meta %>%
+rates_geno <- rates_frame_samples %>%
   group_by(Treatment, Genotype, Meas_Day) %>% 
-  summarise(geno_rate_norm = mean(rate_norm)) %>% 
-  filter(!is.na(Genotype))
+  dplyr::summarise(geno_rate_norm = mean(rate_norm_res))
 
-geno_rates_plot <- rates_frame_auto_meta %>% 
-  filter(Genotype != "NA") %>% 
-  ggplot(aes(Meas_Day, rate_norm)) +
+geno_rates_plot <- rates_frame_samples %>% 
+  ggplot(aes(Meas_Day, rate_norm_res)) +
   geom_boxplot(aes(fill = Treatment)) +
   geom_path(data = rates_geno, aes(Meas_Day, geno_rate_norm, group = Genotype, color = Genotype)) +
   # geom_smooth(aes(Meas_Day, rate_norm, group = Genotype, color = Genotype)) +
   geom_point(data = rates_geno, aes(Meas_Day, geno_rate_norm, color = Genotype), size = 5) +
-  coord_cartesian(ylim = c(0, 400)) +
+  # coord_cartesian(ylim = c(0, 400)) +
   facet_grid(~Treatment) +
   scale_color_manual(values = genocolors) + 
   scale_fill_manual(values = treatcolors[2:3]) +
@@ -471,9 +641,125 @@ geno_rates_plot <- rates_frame_auto_meta %>%
   ylab("mass-normalized oxygen consumption rate (ug/min/g)") + 
   ggtitle("Mass-normalized oxygen consumption rates during experiment")
 geno_rates_plot
-ggsave("./outputs/physio/respR/figures/geno_rates_boxplot.pdf", height = 5, width = 10, device = "pdf")
+# ggsave("./outputs/physio/respR/figures/geno_rates_boxplot.pdf", height = 5, width = 10, device = "pdf")
+```
+```{r}
+Resp_Genotype <- ggplot(rates_frame_samples, aes (Meas_Day, rate_norm_res, color = Genotype, group = Genotype)) +
+  geom_point(alpha=0.3) +
+  stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", width = 0.2 ) +
+  stat_summary(fun=mean, geom = "line") +
+  scale_color_manual(values = genocolors)
+
+Resp_Genotype + facet_grid(ITS2~Treatment)
+Resp_Genotype + facet_grid(mtORF~Treatment)
+Resp_Genotype + facet_grid(Location~Treatment)
+```
+```{r}
+# Treatment 
+title <- expression(paste(italic("Pocillopora"), " mass-corrected oxygen consumption values during experiment", collapse = ""))
+Resp_Treatment <- ggplot(rates_frame_samples, aes(Day, rate_mass_residual, color = Treatment, group = Treatment)) +
+  stat_summary(fun.data = "mean_se",geom = "errorbar", width = 0.2)+
+  #stat_summary(fun.y=mean, geom="point", size =3, alpha=0.5) +
+  stat_summary(fun.y=mean, geom="line") + 
+  stat_summary(fun.y=mean, geom="point") + 
+  # ylim(0, 400) +
+  # theme_classic() +
+  # theme(plot.background=element_blank(), 
+  #           panel.border = element_blank(),
+  #           axis.line = element_line(colour = "black"),
+  #           panel.grid.major = element_blank(),
+  #           panel.grid.minor = element_blank(),
+  #           legend.position="bottom",
+  #           strip.background = element_rect(fill="white")) +
+      scale_color_manual(values = treatcolors[2:3]) +
+      scale_y_continuous(name=("Mass-corrected oxygen consumption rate value")) +
+      # scale_x_discrete(name="Day in the experiment") +
+  # coord_cartesian(ylim=c(0, 6)) +
+  ggtitle(title)
+Resp_Treatment
+Resp_Treatment + facet_nested(. ~ mtORF + Symbiont_Genus, scales = "free_x", space = "free", switch = NULL)
+Resp_Treatment + facet_wrap(~mtORF)
+Resp_Treatment + facet_wrap(~ITS2)
+ggsave("./outputs/physio/respR/respR_progression_plot_treatment.pdf", device = "pdf", height = 5, width = 11)
+```
+```{r dissertation figure 4.3A}
+# Treatment 
+title <- expression(paste(italic("Pocillopora"), " oxygen consumption rates", collapse = ""))
+Resp_Treatment <- ggplot(rates_frame_samples, aes(Day, rate, color = Treatment, group = Treatment)) +
+  stat_summary(fun.data = "mean_se",geom = "errorbar", width = 0.2, position = position_dodge(0.1))+
+  stat_summary(fun.y=mean, geom="point", size =2, alpha=0.8, position = position_dodge(0.1)) +
+  stat_summary(fun.y=mean, geom="line") + 
+      scale_color_manual(values = treatcolors[2:3]) +
+      scale_y_continuous(name=("Oxygen consumption rate (ug O2/min)")) +
+  # coord_cartesian(ylim=c(0, 6)) +
+  ggtitle(title)
+plot_4A <- Resp_Treatment + facet_nested(. ~ mtORF + Symbiont_Genus, scales = "free_x", space = "free", switch = NULL)
+ggsave("./outputs/physio/respR/respR_progression_plot_mtorf_symbiont.pdf", device = "pdf", height = 3.5, width = 6)
+```
+```{r dissertation figure 4.3B}
+# Treatment 
+title <- expression(paste(italic("Pocillopora"), " mass-corrected oxygen consumption values", collapse = ""))
+Resp_Treatment <- ggplot(rates_frame_samples, aes(Day, rate_mass_residual, color = Treatment, group = Treatment)) +
+  stat_summary(fun.data = "mean_se",geom = "errorbar", width = 0.2, position = position_dodge(0.1))+
+  stat_summary(fun.y=mean, geom="point", size =2, alpha=0.8, position = position_dodge(0.1)) +
+  stat_summary(fun.y=mean, geom="line") + 
+      scale_color_manual(values = treatcolors[2:3]) +
+      scale_y_continuous(name=("Mass-corrected oxygen consumption rate value")) +
+  # coord_cartesian(ylim=c(0, 6)) +
+  ggtitle(title)
+plot_4B <- Resp_Treatment + facet_nested(. ~ mtORF + Symbiont_Genus, scales = "free_x", space = "free", switch = NULL)
+ggsave("./outputs/physio/respR/respR_progression_plot_mtorf_symbiont_normalized.pdf", device = "pdf", height = 3.5, width = 6)
+```
+```{r}
+plot_4A / plot_4B
 ```
 
+```{r}
+title <- expression(paste(italic("Pocillopora"), " oxygen consumption rates during experiment", collapse = ""))
+resp_progression_boxplot_genotype_its2 <- rates_frame_samples %>% 
+  # filter(!is.na(Fragment_ID)) %>%
+  # filter(Gulf == "Chiriqui") %>%
+  # filter(Gulf == "Panama") %>%
+  ggplot(aes(Day, rate_norm_res, group = Genotype, color = Genotype)) +
+  geom_point(aes(color = Genotype), alpha = 0.3) +
+  stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", width = 0.2 ) +
+  stat_summary(fun = mean, geom = "line") +
+  # geom_boxplot(aes(fill = Treatment)) +
+  # geom_path(aes(group = Sample_ID, color = Genotype)) +
+  facet_nested(. ~ ITS2 + Treatment, scales = "free_x", space = "free", switch = NULL) +
+  scale_color_manual(values = genocolors) +
+  scale_fill_manual(values = treatcolors[2:3]) + 
+  # ylim(0, 400) +
+  labs(x = "Experiment Day", y = "Mass-normalized oxygen consumption rate (ug/min/g)") +
+  ggtitle(title)
+resp_progression_boxplot_genotype_its2
+# ggsave("./outputs/physio/respR/respR_progression_plot_its2_genotype.pdf", resp_progression_boxplot_genotype_its2, device = "pdf", height = 5, width = 11)
+# ITS2 type has a significant effect on Fv/Fm values
+# PAN-37, PAN-39, PAN-83, (URA-51) are candidates for symbiont switching after Ana initally characterized them
+```
+```{r}
+title <- expression(paste(italic("Pocillopora"), " oxygen consumption rates during experiment", collapse = ""))
+resp_progression_boxplot_genotype_its2 <- rates_frame_samples %>% 
+  # filter(!is.na(Fragment_ID)) %>%
+  # filter(Gulf == "Chiriqui") %>%
+  # filter(Gulf == "Panama") %>%
+  ggplot(aes(Day, rate_norm_res, group = Genotype, color = Genotype)) +
+  geom_point(aes(color = Genotype), alpha = 0.3) +
+  stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", width = 0.2 ) +
+  stat_summary(fun = mean, geom = "line") +
+  # geom_boxplot(aes(fill = Treatment)) +
+  # geom_path(aes(group = Sample_ID, color = Genotype)) +
+  facet_nested(. ~ mtORF + Treatment, scales = "free_x", space = "free", switch = NULL) +
+  scale_color_manual(values = genocolors) +
+  scale_fill_manual(values = treatcolors[2:3]) + 
+  # ylim(0, 400) +
+  labs(x = "Experiment Day", y = "Mass-normalized oxygen consumption rate (umol/min/g)") +
+  ggtitle(title)
+resp_progression_boxplot_genotype_its2
+# ggsave("./outputs/physio/respR/respR_progression_plot_mtORF_genotype.pdf", resp_progression_boxplot_genotype_its2, device = "pdf", height = 5, width = 11)
+# ITS2 type has a significant effect on Fv/Fm values
+# PAN-37, PAN-39, PAN-83, (URA-51) are candidates for symbiont switching after Ana initally characterized them
+```
 
 ## Statistical analysis
 ```{r}
@@ -546,107 +832,12 @@ summary(gvmodel)
 model_matrix(rates_frame_auto_meta1, rate_norm ~ Treatment + Gulf + Genotype + Meas_Day) %>% View()
 ```
 
-### Mixed-effect linear models
-Apply linear mixed effects models to the respiration data akin to the IPAM data...
+### Linear mixed-effect models
 ```{r}
-rates_frame_auto_meta
-rates_frame_auto_meta$Day<-as.integer(rates_frame_auto_meta$Meas_Day)
+rates_frame_samples$Day <- as.integer(rates_frame_samples$Meas_Day)
+rates_frame_samples$DayF <- as.factor(rates_frame_samples$Meas_Day)
 ```
-```{r}
-rates_frame_samples <- rates_frame_auto_meta %>% filter(Sample_ID != "b")
-```
-
-```{r}
-Resp_Genotype <- ggplot(rates_frame_samples, aes (Meas_Day, rate_norm, color = Genotype, group = Genotype)) +
-  geom_point(alpha=0.3) +
-  stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", width = 0.2 ) +
-  stat_summary(fun=mean, geom = "line") +
-  scale_color_manual(values = genocolors) +
-  theme_classic()
-
-Resp_Genotype + facet_grid(ITS2~Treatment)
-Resp_Genotype + facet_grid(mtORF~Treatment)
-Resp_Genotype + facet_grid(Location~Treatment)
-```
-```{r}
-# Treatment 
-Resp_Treatment <- ggplot(rates_frame_samples, aes (Meas_Day, rate_norm, color = Treatment, group = Treatment)) +
-  stat_summary(fun.data = "mean_cl_boot",geom = "errorbar", width = 0.2)+
-  #stat_summary(fun.y=mean, geom="point", size =3, alpha=0.5) +
-  stat_summary(fun.y=mean, geom="line") + 
-  ylim(0, 400) +
-  # theme_classic() +
-  # theme(plot.background=element_blank(), 
-  #           panel.border = element_blank(),
-  #           axis.line = element_line(colour = "black"),
-  #           panel.grid.major = element_blank(),
-  #           panel.grid.minor = element_blank(),
-  #           legend.position="bottom",
-  #           strip.background = element_rect(fill="white")) +
-      scale_color_manual(values = treatcolors[2:3]) #+
-      # scale_y_continuous(limits = c(0.1, 0.7),
-      #                    breaks = seq(0.2, 0.6,0.2),  
-      #                    expand = c(0, 0),
-      #                    name=("YII (Fv/Fm)")) +
-      # scale_x_continuous(name="Days in the experiment",
-      #                    limits = c(0,6),
-      #                    breaks = seq(0, 6, 1),  
-      #                    expand = c(0, 0))
-Resp_Treatment
-Resp_Treatment + facet_wrap(~mtORF)
-Resp_Treatment + facet_wrap(~ITS2)
-ggsave("./outputs/physio/respR/respR_progression_plot_its2_treatment.pdf", device = "pdf", height = 5, width = 11)
-```
-```{r}
-title <- expression(paste(italic("Pocillopora"), " oxygen consumption rates during experiment", collapse = ""))
-resp_progression_boxplot_genotype_its2 <- rates_frame_samples %>% 
-  # filter(!is.na(Fragment_ID)) %>%
-  # filter(Gulf == "Chiriqui") %>%
-  # filter(Gulf == "Panama") %>%
-  ggplot(aes(Meas_Day, rate_norm, group = Genotype, color = Genotype)) +
-  geom_point(aes(color = Genotype), alpha = 0.3) +
-  stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", width = 0.2 ) +
-  stat_summary(fun = mean, geom = "line") +
-  # geom_boxplot(aes(fill = Treatment)) +
-  # geom_path(aes(group = Sample_ID, color = Genotype)) +
-  facet_nested(. ~ ITS2 + Treatment, scales = "free_x", space = "free", switch = NULL) +
-  scale_color_manual(values = genocolors) +
-  scale_fill_manual(values = treatcolors[2:3]) + 
-  ylim(0, 400) +
-  labs(x = "Experiment Day", y = "Mass-normalized oxygen consumption rate (ug/min/g)") +
-  ggtitle(title)
-resp_progression_boxplot_genotype_its2
-ggsave("./outputs/physio/respR/respR_progression_plot_its2_genotype.pdf", resp_progression_boxplot_genotype_its2, device = "pdf", height = 5, width = 11)
-# ITS2 type has a significant effect on Fv/Fm values
-# PAN-37, PAN-39, PAN-83, (URA-51) are candidates for symbiont switching after Ana initally characterized them
-```
-```{r}
-title <- expression(paste(italic("Pocillopora"), " oxygen consumption rates during experiment", collapse = ""))
-resp_progression_boxplot_genotype_its2 <- rates_frame_samples %>% 
-  # filter(!is.na(Fragment_ID)) %>%
-  # filter(Gulf == "Chiriqui") %>%
-  # filter(Gulf == "Panama") %>%
-  ggplot(aes(Meas_Day, rate_norm, group = Genotype, color = Genotype)) +
-  geom_point(aes(color = Genotype), alpha = 0.3) +
-  stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", width = 0.2 ) +
-  stat_summary(fun = mean, geom = "line") +
-  # geom_boxplot(aes(fill = Treatment)) +
-  # geom_path(aes(group = Sample_ID, color = Genotype)) +
-  facet_nested(. ~ mtORF + Treatment, scales = "free_x", space = "free", switch = NULL) +
-  scale_color_manual(values = genocolors) +
-  scale_fill_manual(values = treatcolors[2:3]) + 
-  ylim(0, 400) +
-  labs(x = "Experiment Day", y = "Mass-normalized oxygen consumption rate (ug/min/g)") +
-  ggtitle(title)
-resp_progression_boxplot_genotype_its2
-ggsave("./outputs/physio/respR/respR_progression_plot_mtORF_genotype.pdf", resp_progression_boxplot_genotype_its2, device = "pdf", height = 5, width = 11)
-# ITS2 type has a significant effect on Fv/Fm values
-# PAN-37, PAN-39, PAN-83, (URA-51) are candidates for symbiont switching after Ana initally characterized them
-```
-
-
-```{r}
-# Libraries 
+```{r lme model packages}
   library("lme4")
   library("multcomp")
   library("multcompView")
@@ -654,45 +845,31 @@ ggsave("./outputs/physio/respR/respR_progression_plot_mtORF_genotype.pdf", resp_
   library("effects")
   library("lmerTest")
 ```
-
-If you use day as a factor:
-
-* mtORF and ITS2 considered random effects
-* Day (as factor, not numeric) and Treatment considered fixed effect (what you are really testing)
-
-
+### Statistical analysis of mass-normalized rates
+#### Model #1: Treatment x Day, random ITS2, mtORF effects
 ```{r}
-# ipam_fragments$DayF<-as.factor(ipam_fragments$Day)
-
-LM_1 <- lmer(rate_norm ~ Treatment * Meas_Day + 
+respR_lme_1 <- lmer(rate_norm_res ~ Treatment * Meas_Day + 
                              (1|mtORF) + (1|ITS2), REML=TRUE, data= rates_frame_samples)
-anova(LM_1)
-ranova(LM_1)
-step(LM_1)
+anova(respR_lme_1)
+ranova(respR_lme_1)
+step(respR_lme_1)
 # * fv/Fm is significantly different (not a surprise given day 2 data)
 # * No treatment effect
 # * Both, ORF and ITS2 are significant
 ```
 ```{r effect_plot}
-pdf("./outputs/physio/respR/figures/respR_treatment_effect.pdf", width = 8, height = 6)
+# pdf("./outputs/physio/respR/figures/respR_treatment_effect.pdf", width = 8, height = 6)
 plot(Effect(c("Treatment","Meas_Day"), LM_1), x.var="Meas_Day", multiline = T, ci.style="bars")
 # Clear that there is no treatment effect after controlling for other random factors
-dev.off()
+# dev.off()
 ```
 ```{r}
 Effect(c("Treatment","Meas_Day"), LM_1)
 ```
 
-# To look at the ITS2, ORF, etc
-
-This is kind of meaningless until we close the gaps in ITS2 and ORF, other option is discard genotypes with "unknown" and run with the genotyped corals.  
-
-
 ```{r make ITS2 the question}
-rates_frame_samples_known <-  rates_frame_samples %>% filter(Genotype != "PAN-5" | Genotype != "PAN-10" | Genotype != "URA-51")
-
-LM_2 <- lmer(rate_norm ~ ITS2 + mtORF + 
-                             (1|Meas_Day), REML=TRUE,  data = rates_frame_samples_known)
+LM_2 <- lmer(rate_norm_res ~ ITS2 + mtORF + 
+                             (1|Meas_Day), REML=TRUE,  data = rates_frame_samples)
 anova(LM_2)
 ranova(LM_2)
 step(LM_2)
@@ -702,3 +879,71 @@ RespEmm <- cld(emmeans(LM_2, specs = c("ITS2")))
 #write.csv(YIIAcerEmm, "YIIAcerEmm.csv")
 RespEmm
 ```
+### Statistical analysis of model residuals
+#### Model #1: Treatment x Day, random ITS2, mtORF effects
+```{r lme model 1}
+# Treatment effect model, mtORF and ITS2 random effects
+respR_lme_1 <- lmer(rate_mass_residual ~ Treatment * DayF + 
+                             (1|mtORF) + (1|Symbiont_Genus), REML=TRUE, data = rates_frame_samples)
+summary(respR_lme_1)
+#
+anova(respR_lme_1) # Significant fixed effect of treatment on model residuals
+#
+ranova(respR_lme_1) # Significant random effect of ITS2 type, no random effect of mtORF type
+#
+step(respR_lme_1)
+```
+```{r effect_plot}
+# pdf("./outputs/figures/ipam/ipam_treatment_effect.pdf", width = 8, height = 6)
+plot(Effect(c("Treatment", "DayF"), respR_lme_1), x.var="DayF",
+     multiline = T, ci.style="bars", colors = treatcolors[2:3])
+# Clear that there is a strong antibiotics treatment effect
+# dev.off()
+```
+#### Model #2: Treatment x Day, random Genotype effect
+```{r treatment model residuals, random genotype}
+# Treatment effect model, genotype random effects
+respR_lme_2 <- lmer(rate_mass_residual ~ Treatment * DayF + 
+                             (1|Genotype), REML=TRUE, data= rates_frame_samples)
+summary(respR_lme_2)
+#
+anova(respR_lme_2) # Significant fixed effects of treatment and measurement day on model residuals
+#
+ranova(respR_lme_2) # Very significant random effect of genotype
+#
+step(respR_lme_2)
+```
+```{r effect_plot}
+# pdf("./outputs/figures/ipam/ipam_treatment_effect.pdf", width = 8, height = 6)
+plot(Effect(c("Treatment", "DayF"), respR_lme_2), x.var="DayF",
+     multiline = T, ci.style="bars", colors = treatcolors[2:3])
+# Clear that there is a strong antibiotics treatment effect
+# dev.off()
+```
+#### Model #3
+```{r Genotype model residuals, random day}
+# Treatment and genotype interaction model, measurement day random effects
+LM_3 <- lmer(rate_mass_residual ~ Treatment * Genotype + 
+                             (1|DayF), REML=TRUE, data= rates_frame_samples)
+#
+anova(LM_3) # Significant fixed effects of treatment and genotype on model residuals
+#
+ranova(LM_3) # No random effect of measurement day
+#
+step(LM_3)
+```
+```{r Full interaction model residuals}
+# Treatment and genotype interaction model
+LM_4 <- lm(rate_mass_residual ~ Treatment * Genotype * Meas_Day, data= rates_frame_samples)
+#
+anova(LM_4) # Significant fixed effects of treatment, genotype, and measurement day on model residuals
+#           # No significant interaction terms
+step(LM_4)
+```
+```{r Full model residuals, random genotype}
+# Treatment and genotype interaction model
+LM_5 <- lmer(rate_mass_residual ~ Treatment + DayF + (1|Genotype), data= rates_frame_samples)
+#
+anova(LM_5)
+```
+

@@ -70,19 +70,19 @@ cond_col_colors <- c(treatcolors[1], genocolors,
                      treatcolors[2], genocolors,
                      treatcolors[3], genocolors)# colcolors_null
 # color vector for barplot facet strips w/ gulf
-genotype_colors <- left_join(genotypes, genotype_colors, by = "Genotype")
-geno_chiriqui_colors <- genotype_colors$color[genotype_colors$Gulf == "Chiriqui"]
-geno_panama_colors <- genotype_colors$color[genotype_colors$Gulf == "Panama"]
-cond_col_colors <- c(treatcolors[1], "white", geno_chiriqui_colors, "white", geno_panama_colors,
-                     treatcolors[2], "white", geno_chiriqui_colors, "white", geno_panama_colors,
-                     treatcolors[3], "white", geno_chiriqui_colors, "white", geno_panama_colors)# colcolors_null
+# genotype_colors <- left_join(genotypes, genotype_colors, by = "Genotype")
+# geno_chiriqui_colors <- genotype_colors$color[genotype_colors$Gulf == "Chiriqui"]
+# geno_panama_colors <- genotype_colors$color[genotype_colors$Gulf == "Panama"]
+# cond_col_colors <- c(treatcolors[1], "white", geno_chiriqui_colors, "white", geno_panama_colors,
+#                      treatcolors[2], "white", geno_chiriqui_colors, "white", geno_panama_colors,
+#                      treatcolors[3], "white", geno_chiriqui_colors, "white", geno_panama_colors)# colcolors_null
 
 # read in preserved colors for taxa barplots
 colors_families <- read_csv("./Rmd/taxa_colors/colors_families.csv")
 # colors_families$Family
 ```
 ```{r theme}
-theme_set(theme_mec())
+theme_set(theme_bw())
 ```
 
 ## Import sample metadata
@@ -96,10 +96,10 @@ fragments <- read_csv("data/fragments.csv", col_types = cols(
 # factor levels
 treatment_levels <- c("Baseline", "Control", "Antibiotics", "FSW_Controls", "SW_Controls", "Neg_Controls", "ZYMO_Controls")
 sampling_levels <- c("Day 0", "Day 7")
-genotype_levels <- c("PAN-5", "PAN-10", "PAN-32", "PAN-34", "PAN-35", "PAN-37", "PAN-39", "PAN-41", "PAN-43","PAN-44", "PAN-78", "PAN-79", "PAN-83", "URA-51", NA)
+genotype_levels <- c("PAN-05", "PAN-10", "PAN-32", "PAN-34", "PAN-35", "PAN-37", "PAN-39", "PAN-41", "PAN-43","PAN-44", "PAN-78", "PAN-79", "PAN-83", "URA-51", NA)
 gulf_levels <- c("Chiriqui", "Panama")
 loc_levels <- c("Uva", "Saboga", "Uraba")
-mtorf_levels <- c("Type_1", "Type_2", "Type_3")#, "unknown")
+mtorf_levels <- c("Type_1", "Type_3")#, "unknown")
 sym_levels <- c("C1bc", "C1d", "D1")#, "unknown")
 genus_levels <- c("Cladocopium", "Durusdinium")
 ```
@@ -110,6 +110,7 @@ genus_levels <- c("Cladocopium", "Durusdinium")
 ASV <- read.table("./outputs/qiime2/export_silva/all_silva_feature-table.tsv", row.names = 1, header = TRUE)
 ASV <- t(ASV)
 rownames(ASV) <- gsub("\\.", "-", rownames(ASV))
+rownames(ASV) <- gsub("PAN-5", "PAN-05", rownames(ASV))
 ```
 ```{r taxomony}
 # Read in taxononomic classification information
@@ -124,7 +125,8 @@ taxa_df <- data.frame(taxonomy) %>% rownames_to_column("ASV")
 # Import phylogenetic tree
 tree <- read_tree("./outputs/qiime2/export_silva/tree.nwk")
 # Import sample metadata 
-sample_metadata <- read_delim("./data/qiime2_metadata.tsv", delim ="\t", col_names = c("Sample_ID", "Genotype", "Treatment", "Sampling_Time", "Location", "Gulf", "mtORF", "ITS2", "Seq_Control", "Neg_Control"), comment = "#")#, row.names = 1, header = FALSE)
+sample_metadata <- read_delim("./data/qiime2_metadata.tsv", delim ="\t", col_names = c("Sample_ID", "Genotype", "Treatment", "Sampling_Time", "Seq_Control", "Neg_Control"), comment = "#")#, row.names = 1, header = FALSE)
+sample_metadata <- sample_metadata %>% full_join(genotypes, by = "Genotype")
 # Set factor orders
 sample_metadata$Genotype <- factor(sample_metadata$Genotype, levels = genotype_levels, ordered = TRUE)
 sample_metadata$Treatment <- factor(sample_metadata$Treatment, levels = treatment_levels, ordered = TRUE)
@@ -132,7 +134,7 @@ sample_metadata$Gulf <- factor(sample_metadata$Gulf, levels = gulf_levels, order
 sample_metadata$Location <- factor(sample_metadata$Location, levels = loc_levels, ordered = TRUE)
 sample_metadata$mtORF <- factor(sample_metadata$mtORF, levels = mtorf_levels, ordered = TRUE)
 sample_metadata$ITS2 <- factor(sample_metadata$ITS2, levels = sym_levels, ordered = TRUE)
-sample_metadata$Genus <- ifelse(sample_metadata$ITS2 == "D1", "Durusdinium", "Cladocopium")
+sample_metadata$Symbiont_Genus <- ifelse(sample_metadata$ITS2 == "D1", "Durusdinium", "Cladocopium")
 # Create phyloseq-compatible sample map
 map <- sample_metadata %>% column_to_rownames("Sample_ID")
 ```
@@ -144,6 +146,10 @@ ps <- phyloseq(otu_table(ASV, taxa_are_rows = FALSE),
                phy_tree(tree))
 ps
 # summarize_phyloseq(ps)
+# otu_table()   OTU Table:         [ 2153 taxa and 185 samples ]
+# sample_data() Sample Data:       [ 185 samples by 11 sample variables ]
+# tax_table()   Taxonomy Table:    [ 2153 taxa by 7 taxonomic ranks ]
+# phy_tree()    Phylogenetic Tree: [ 2153 tips and 2124 internal nodes ]
 ```
 ```{r ps_process}
 # Pre-process, filter, and QC phyloseq object
@@ -152,7 +158,6 @@ samples <- sample_names(ps)
 # samples
 ps <- prune_samples(grep("PAN-79_Baseline_049", samples, value = TRUE, invert = TRUE), ps)
 ```
-
 ## Remove contaminant ASVs and inspect sequencing controls
 ```{r subset_sequencing_controls}
 # make phyloseq object with just sequencing controls
@@ -207,7 +212,11 @@ plot_ordination(ps_seq_controls, seq_controls_ordination, color = "Treatment", s
 ps_assigned <- subset_taxa(ps_decontam, Kingdom != "Unassigned") # ## unassigned taxa filtered out
 ps_assigned <- subset_taxa(ps_assigned, Order != "Chloroplast") # ## taxa filtered out
 ps_assigned <- subset_taxa(ps_assigned, Family != "Mitochondria") # ## taxa filtered out
-ps_assigned # 1,835 taxa and 7 taxonomic ranks
+ps_assigned
+# otu_table()   OTU Table:         [ 1835 taxa and 184 samples ]
+# sample_data() Sample Data:       [ 184 samples by 11 sample variables ]
+# tax_table()   Taxonomy Table:    [ 1835 taxa by 7 taxonomic ranks ]
+# phy_tree()    Phylogenetic Tree: [ 1835 tips and 1823 internal nodes ]
 ```
 ```{r inspect_assigned_phyloseq}
 ntaxa(ps_assigned) # 1,835
@@ -267,16 +276,14 @@ ps_filtered <- ps_assigned
 ```{r}
 ps_baseline_rel <- transform_sample_counts(ps_baseline, function(x) {x / sum(x)})
 colors_phlya <- taxa_color_seq(ps_baseline_rel, taxa_rank = "Phylum")
-# colors_families <- taxa_color_seq(ps_baseline_rel, taxa_rank = "Family")
+colors_families_baseline <- taxa_color_seq(ps_baseline_rel, taxa_rank = "Family")
 taxa_barplot(ps_baseline_rel, taxa_rank = "Phylum", colors_phyla$Phylum, colors_phyla)
 # taxa_barplot(ps_baseline_rel, taxa_rank = "Family", colors_families$Family, colors_families)
-
 ```
 ```{r}
 pdf("./outputs/phyloseq_results/figures/family_barplot_baseline_samples.pdf", height = 8.5, width = 11)
 taxa_barplot(ps_baseline_rel, "Family", colors_families$Family, colors_families)
 ```
-
 ```{r codaseq_export}
 sample_metadata_baseline <- sample_metadata %>%
   filter(Treatment == "Baseline") %>%
@@ -316,14 +323,14 @@ ylab <- paste("PC2: ", pc2, "%", sep="")
 ```{r clr_ggbiplot_genotype}
 pca_clr_biplot <- d_pcx %>% 
   gg_biplot(., choices = c(1,2),
-            groups = sample_metadata_baseline$Genotype,
-            # groups2 = sample_metadata$Gulf,
+            groups = sample_metadata_baseline$haplotype,
+            groups2 = sample_metadata$haplotype,
             ellipse = TRUE,
             var.axes = FALSE,
             taxlabs = "Phylum",
             varname.abbrev = F,
-            varname.size = 2.6) +
-  scale_color_manual(values = genocolors, name = "Genotype") #+
+            varname.size = 2.6) #+
+  # scale_color_manual(values = genocolors, name = "Genotype") +
   # scale_fill_manual(values = treatcolors, name = "Treatment") +
   # scale_shape_manual(values = shapes, name = "Location") +
   # guides(color = guide_legend(override.aes = list(color = treatcolors, alpha = 1, stroke = 1))) +
@@ -381,11 +388,10 @@ beta_boxplot <- mod_distance %>%
 beta_boxplot
 # ggsave(beta_boxplot, filename = "./outputs/phyloseq_results/figures/beta_dist-centroid_boxplot.pdf", width = 120, height = 80, units = "mm")
 ```
-
 ## Inspect control samples' bacteria communities
 ```{r}
 ps_control_rel <- transform_sample_counts(ps_control, function(x) {x / sum(x)})
-# colors_families <- taxa_color_seq(ps_baseline_rel, taxa_rank = "Family")
+colors_families <- taxa_color_seq(ps_control_rel, taxa_rank = "Family")
 taxa_barplot(ps_control_rel, taxa_rank = "Family", colors_families$Family, colors_families)
 ```
 ```{r}
@@ -499,12 +505,14 @@ beta_boxplot
 ## Inspect antibiotics samples' bacteria communities
 ```{r}
 ps_antibiotics_rel <- transform_sample_counts(ps_antibiotics, function(x) {x / sum(x)})
-colors_families <- taxa_color_seq(ps_antibiotics_rel, taxa_rank = "Family")
+colors_families_anti <- taxa_color_seq(ps_antibiotics_rel, taxa_rank = "Family")
+colors_genera_anti <- taxa_color_seq(ps_antibiotics_rel, taxa_rank = "Genus")
 taxa_barplot(ps_antibiotics_rel, taxa_rank = "Family", colors_families$Family, colors_families)
 ```
 ```{r}
 pdf("./outputs/phyloseq_results/figures/family_barplot_antibiotics_samples.pdf", height = 8.5, width = 11)
 taxa_barplot(ps_antibiotics_rel, "Family", colors_families$Family, colors_families)
+taxa_barplot(ps_antibiotics_rel, "Genus", colors_genera_anti$Genus, colors_genera_anti)
 ```
 ```{r codaseq_export}
 sample_metadata_antibiotics <- sample_metadata %>%
@@ -614,14 +622,17 @@ beta_boxplot
 samples_only <- grep("_", samples, value = TRUE, invert = FALSE)
 ps_filtered_samples <- prune_samples(samples_only, ps_filtered)
 ```
-
 ## Compositional Data Analysis (CoDA) 
 ```{r codaseq_export}
 # export otu and taxa tables from phyloseq for codaseq
 otu <- as(otu_table(ps_filtered_samples), "matrix")
 taxon <- as(tax_table(ps_filtered_samples), "matrix")
+#
 taxa_df_filtered <- data.frame(taxon) %>% rownames_to_column("ASV")
+taxa_df_filtered$Genus[is.na(taxa_df_filtered$Genus)] <- "unclassified"
+#
 sample_metadata <- data.frame(sample_data(ps_filtered_samples)) %>% rownames_to_column("Sample_ID")
+#
 family <- as.character(taxon[,"Family"])
 genus <- as.character(taxon[,"Genus"])
 ```
@@ -670,27 +681,27 @@ pca_clr_biplot <- d_pcx %>%
   scale_color_manual(values = treatcolors[1:3], name = "Treatment") +
   scale_fill_manual(values = treatcolors[1:3], name = "Treatment") +
   # scale_shape_manual(values = shapes, name = "Location") +
-  ggtitle("PCA plot of bacteria community beta diversity") +
+  ggtitle("Bacteria communities PCA plot") +
   guides(color = guide_legend(override.aes = list(color = treatcolors, alpha = 1, stroke = 1)))
 #
 pca_clr_biplot
-ggsave(pca_clr_biplot, filename = "./outputs/phyloseq_results/figures/clr_ggbiplot_decontam.pdf", width = 180, height = 120, units = "mm", device = "pdf")
+ggsave(pca_clr_biplot, filename = "./outputs/phyloseq_results/figures/clr_ggbiplot_decontam.pdf", width = 6.5, height = 5, units = "in", device = "pdf")
 ```
 ```{r clr_ggbiplot_treatment_genotype}
 pca_clr_biplot <- d_pcx %>% 
   gg_biplot(., choices = c(1,2),
-            groups = sample_metadata$Treatment,
+            groups = sample_metadata$haplotype,
             groups2 = sample_metadata$Genotype,
             ellipse = TRUE,
             var.axes = FALSE,
             taxlabs = "Genus",
             varname.abbrev = F,
-            varname.size = 2.6) +
-  scale_color_manual(values = treatcolors[1:3], name = "Treatment") +
-  scale_fill_manual(values = genocolors, name = "Genotype") +
-  scale_shape_manual(values = shapes, name = "Location") +
-  ggtitle("PCA plot of bacteria community beta diversity") +
-  guides(color = guide_legend(override.aes = list(color = treatcolors, alpha = 1, stroke = 1)))
+            varname.size = 2.6) #+
+  # scale_color_manual(values = treatcolors[1:3], name = "Treatment") +
+  # scale_fill_manual(values = genocolors, name = "Genotype") +
+  # scale_shape_manual(values = shapes, name = "Location") +
+  # ggtitle("PCA plot of bacteria community beta diversity") +
+  # guides(color = guide_legend(override.aes = list(color = treatcolors, alpha = 1, stroke = 1)))
 #
 pca_clr_biplot
 # ggsave(pca_clr_biplot, filename = "./outputs/phyloseq_results/figures/clr_ggbiplot_treatment_genotype.pdf", width = 140, height = 120, units = "mm", device = "pdf")
@@ -728,7 +739,6 @@ anosim_sym <- anosim(dist_clr, its, permutations = 999)
 plot(anosim_sym)
 # All ANOSIM tests for each factor yield significant results
 ```
-
 #### PERMDISP
 ```{r permdisp}
 # PERMDISP tests
@@ -788,27 +798,27 @@ mod_distance <- data.frame(mod$distance) %>%
 # # 
 beta_boxplot <- mod_distance %>%
   ggplot(aes(Treatment, mod.distance)) + 
-  geom_violin(aes(fill = Treatment)) +
-  geom_jitter(aes(color = Genotype), fill = "black", width = 0.05, shape = 1, size = 1, stroke = 1, show.legend = TRUE) +
+  geom_boxplot(aes(fill = Treatment)) +
+  geom_jitter(color = "black", fill = "black", width = 0.05, shape = 1, size = 1, stroke = 1, show.legend = TRUE) +
   scale_fill_manual(values = treatcolors) +
   scale_color_manual(values = genocolors) +
   # scale_shape_manual(values = colshapes, name="Colony") + 
   # scale_x_discrete(labels = c("C", "H", "A", "A+H")) +
   #ylim(c(0,100)) +
   xlab(NULL) +
-  ylab("Beta diversity distance to centroid") +
-  ggtitle("Beta diversity distance to centroid violin plot") +
+  ylab("Distance to centroid") +
+  coord_cartesian(ylim = c(0,125)) +
+  ggtitle("Beta diversity: distance to centroid boxplots") +
   theme(legend.position = "none",
           axis.text.x = element_text(angle = 0),
         strip.background = element_blank(),
-        strip.text = element_blank())
+        strip.text = element_blank()) + theme_bw()
 beta_boxplot
-ggsave(beta_boxplot, filename = "./outputs/phyloseq_results/figures/beta_dist-centroid_boxplot.pdf", width = 6, height = 4, units = "in", device = "pdf")
+# ggsave(beta_boxplot, filename = "./outputs/phyloseq_results/figures/beta_dist-centroid_boxplot.pdf", width = 6, height = 4, units = "in", device = "pdf")
 ```
 ```{r}
 kruskal.test(data=mod_distance, mod.distance ~ Treatment)
 ```
-
 ## Taxa composition plots
 ```{r relative_abundance_transform}
 ps_filtered_rel <- transform_sample_counts(ps_filtered_samples, function(x) {x / sum(x)})
@@ -826,11 +836,11 @@ write_csv(colors_phyla, "./Rmd/taxa_colors/colors_phyla.csv")
 colors_classes <- taxa_color_seq(ps_filtered_rel, taxa_rank = "Class") 
 write_csv(colors_classes, "./Rmd/taxa_colors/colors_class.csv")
 # # Orders
-colors_orders <- taxa_color_seq(ps_filtered_AXH_rel, taxa_rank = "Order")
+colors_orders <- taxa_color_seq(ps_filtered_rel, taxa_rank = "Order")
 write_csv(colors_orders, "./Rmd/taxa_colors/colors_order.csv")
 # # Families
 colors_families <- taxa_color_seq(ps_filtered_rel, taxa_rank = "Family")
-# write_csv(colors_families, "./Rmd/taxa_colors/colors_families.csv")
+# write_csv(colors_families, "./Rmd/taxa_colors/colors_families_defense.csv")
 # # Genera
 colors_genera <- taxa_color_seq(ps_filtered_rel, taxa_rank = "Genus")
 write_csv(colors_genera, "./Rmd/taxa_colors/colors_genera.csv")
@@ -842,10 +852,10 @@ write_csv(colors_species, "./Rmd/taxa_colors/colors_species.csv")
 ```{r taxa_barplots}
 taxa_barplot(ps_filtered_rel, "Phylum", colors_phyla$Phylum, colors_phyla)
 taxa_barplot(ps_filtered_rel, "Class", colors_classes$Class, colors_classes)
-taxa_barplot(ps_filtered_AXH_rel, "Order", colors_orders$Order, colors_orders)
+taxa_barplot(ps_filtered_rel, "Order", colors_orders$Order, colors_orders)
 taxa_barplot(ps_filtered_rel, "Family", colors_families$Family, colors_families)
-taxa_barplot(ps_filtered_AXH_rel, "Genus", colors_genera$Genus, colors_genera)
-taxa_barplot(ps_filtered_AXH_rel, "Species", colors_species$Species, colors_species)
+taxa_barplot(ps_filtered_rel, "Genus", colors_genera$Genus, colors_genera)
+taxa_barplot(ps_filtered_rel, "Species", colors_species$Species, colors_species)
 ```
 ```{r family_barplot_3B}
 pdf("./outputs/phyloseq_results/figures/family_barplot.pdf", height = 8.5, width = 18)
@@ -855,7 +865,19 @@ taxa_barplot(ps_filtered_rel, "Family", colors_families$Family, colors_families)
 # pdf("./manuscript_figures/MBE702_family_barplot.pdf", height = 4.3, width = 6.1)
 # taxa_barplot(ps_filtered_AXH_rel, "Family", colors_families$Family, colors_families)
 ```
-
+```{r}
+colors_families_defense <- read_csv("./Rmd/taxa_colors/colors_families_defense_edit.csv")
+colors_families_defense$Family[2:66] <- stringr::str_c(" ", colors_families_defense$Family[2:66])
+colors_families$Family == colors_families_defense$Family
+colors_families_defense$hex <- gplots::col2hex(colors_families_defense$colors)
+```
+```{r}
+title <- expression(paste("Relative abundance of ", italic("Pocillopora"), "-associated bacteria families across treatments", collapse = ""))
+# taxa_barplot_simple(ps_filtered_rel, "Phylum", colors_phyla$Phylum, colors_phyla)
+# pdf("./outputs/phyloseq_results/figures/family_barplot_simple_defense.pdf", height = 7, width = 10)
+pdf("./outputs/phyloseq_results/figures/family_barplot_simple_dissertation.pdf", height = 10, width = 9)
+taxa_barplot_simple(ps_filtered_rel, "Family", colors_families$Family, colors_families) + ggtitle(title)
+```
 ## Alpha diversity plots and statistics
 ```{r estimate_richness}
 # Use unfiltered, unrarefied dataset for alpha diversity metrics calculations
@@ -881,35 +903,37 @@ alpha_box
 ```
 ```{r chao1_boxplot}
 obs_box <- ps_filtered_samples %>% plot_richness(., x="Treatment", measures=c("Observed")) +
-  geom_violin(aes(fill = Treatment)) +
+  geom_boxplot(aes(fill = Treatment)) +
   scale_fill_manual(values = treatcolors[1:3]) +
-  new_scale_fill() + 
-  geom_jitter(aes(color = Genotype), width = 0.05, shape = 1, size = 1, stroke = 1, show.legend = FALSE) +
+  geom_jitter(color = "black", width = 0.05, shape = 1, size = 1, stroke = 1, show.legend = TRUE) +
   scale_color_manual(values = genocolors) +
   scale_fill_manual(values = treatcolors) +
   # scale_shape_manual(values = colshapes, name="Colony") + 
   # ylim(c(0,20)) +
   xlab(NULL) +
-  ylab("Observed ASV richness") +
-  ggtitle("Observed ASVs alpha diversity violin plot") +
-  theme(legend.position = "none",
+  ylab("Chao1 ASV richness") +
+  ggtitle("Alpha diversity: richness boxplots") +
+  theme_bw() +
+  theme(
           axis.text.x = element_text(angle = 0),
         strip.background = element_blank(),
-        strip.text = element_blank())
+        strip.text = element_blank()) 
 obs_box
-ggsave(obs_box, filename = "./outputs/phyloseq_results/figures/observedASVs_boxplot.pdf",  width = 6, height = 4, units = "in", device = "pdf")
+# ggsave(obs_box, filename = "./outputs/phyloseq_results/figures/observedASVs_boxplot.pdf",  width = 6, height = 4, units = "in", device = "pdf")
 ```
 ```{r}
 richness_boxplots <- (chao1 | shannon | simpson)
 richness_boxplots 
 ```
-
+```{r}
+pca_clr_biplot | obs_box / beta_boxplot 
+ggsave("~/Desktop/bacteria-diversity.pdf", device = "pdf", height = 6, width = 12)
+```
 ### Statistical testing of alpha diversity differences
 ```{r richness_data}
 # make combined table with richness estimates and sample data
 ps_richness_meta <- left_join(ps_richness, sample_metadata, by = "Sample_ID")
 ```
-
 ```{r}
 # Kruskal-Wallis testing for treatment effect
 kruskal.test(data=ps_richness_meta, Observed ~ Treatment)
@@ -971,7 +995,7 @@ x.ps <- aldex(reads = aldex.asv, conditions = conds, mc.samples = 128, test = "t
 ```{r}
 aldex_res_base_control <- x.ps %>% 
   rownames_to_column("ASV") %>% 
-  filter(wi.eBH < 0.05) %>% 
+  # filter(wi.eBH < 0.05) %>% 
   left_join(taxa_df, by = "ASV") %>% 
   arrange(desc(effect))
 write_csv(aldex_res_base_control, "./outputs/phyloseq_results/aldex2_base_control.csv")
@@ -1007,7 +1031,7 @@ x.ps <- aldex(reads = aldex.asv, conditions = conds, mc.samples = 128, test = "t
 ```{r}
 aldex_res_base_anti <- x.ps %>% 
   rownames_to_column("ASV") %>% 
-  filter(wi.eBH < 0.05) %>% 
+  # filter(wi.eBH < 0.05) %>% 
   left_join(taxa_df, by = "ASV") %>% 
   arrange(desc(effect))
 write_csv(aldex_res_base_anti, file = "./outputs/phyloseq_results/aldex2_base_anti.csv")
@@ -1020,7 +1044,6 @@ aldex.plot(x.ps, type = "MA", test = "welch", xlab = "Log-ratio abundance", ylab
 
 #dev.off()
 ```
-
 #### Antibiotics-Control
 ```{r}
 # Treatment sample subsets of phyloseq objects
@@ -1044,7 +1067,7 @@ x.ps <- aldex(reads = aldex.asv, conditions = conds, mc.samples = 128, test = "t
 ```{r}
 aldex_res_control_anti <- x.ps %>% 
   rownames_to_column("ASV") %>% 
-  filter(wi.eBH < 0.05) %>% 
+  # filter(wi.eBH < 0.05) %>% 
   left_join(taxa_df, by = "ASV")
 write.csv(x.ps, file = "./outputs/phyloseq_results/aldex2_control_anti.csv")
 ```
@@ -1076,8 +1099,22 @@ aldex_res_control_anti %>%
 aldex_res_control_anti %>% 
   dplyr::group_by(Genus) %>% dplyr::count() %>% arrange(desc(n))
 ```
+```{r}
+# aldex_df <- aldex_res_base_control
+# aldex_df <- aldex_res_base_anti
+aldex_df <- aldex_res_control_anti
 
+# 
+aldexmw <- aldex_plot_gg(aldex_df, type = "MW", test = "welch") + ggtitle("Control vs. Antibiotics")
+aldexma <- aldex_plot_gg(aldex_df, type = "MA", test = "welch")
+ 
+aldexplots_control_anti <- (aldexmw | aldexma) 
 
+aldexplots <- (aldexplots_base_control / aldexplots_base_anti / aldexplots_control_anti)
+aldexplots
+
+ggsave(aldexplots, filename = "./outputs/phyloseq_results/figures/aldex2_all.pdf", width = 9, height = 12, units = "in", device = "pdf")
+```
 #### Venn Diagrams
 ```{r}
 base_control <- intersect(aldex_res_base_anti$ASV, aldex_res_base_control$ASV)
@@ -1096,7 +1133,7 @@ data.frame("ASV" = intersect(base_control, anti_shared)) %>% left_join(taxa_df, 
 
 ## Core microbiome
 ```{r}
-core.taxa.standard <- core_members(ps_filtered_rel, detection = 0, prevalence = 50/100)
+core.taxa.standard <- core_members(ps_filtered_rel, detection = 0, prevalence = 80/100)
 ```
 ```{r}
 core.abundance <- sample_sums(core(ps_filtered_rel, detection = .01, prevalence = .95))
@@ -1116,9 +1153,68 @@ p <- plot_core(ps_filtered_rel, plot.type = "heatmap", colours = gray,
 print(p)
 ```
 
+## Bubble plots
+```{r}
+ps_filtered_rel
+sample_data(ps_filtered_rel)
+tax_table(ps_filtered_rel) %>% View()
+```
+```{r}
+ps_filtered_rel_0.05 <- filter_taxa(ps_filtered_rel, function(x) sum(x) > 0.05, TRUE)
+# 
+sample_asv_data <- data.frame(otu_table(ps_filtered_rel_0.05)) %>% rownames_to_column("Sample_ID") 
+colnames(sample_asv_data) <- gsub("^X", "", colnames(sample_asv_data))
+```
+```{r create tidy data frame for bubble plots}
+bubble_data <- left_join(sample_metadata, sample_asv_data, by = "Sample_ID") %>%
+  pivot_longer(cols = -(Sample_ID:mtORF), names_to = "ASV", values_to = "relative_abundance") %>%
+  full_join(taxa_df_filtered, by = "ASV") %>% arrange(desc(relative_abundance))
+# 304,610 obs. of 21 variables
+```
+```{r}
+# bubble_0.01 <-  bubble_data %>% dplyr::filter(relative_abundance > 0.01)
+# bubble_0.05 <-  bubble_data %>% dplyr::filter(relative_abundance > 0.05)
+bubble_core <- bubble %>% dplyr::filter(ASV %in% core.taxa.standard)
+```
+
+```{r}
+# One thing I want to do is havve the phylogenetic tree next to the plot
+bubble_data %>% ggplot(aes(x = Sample_ID, y = ASV, fill = Genus)) +
+  geom_point(aes(size = relative_abundance*100), alpha = 0.9, shape = 21) +
+  # scale_size_continuous(limits = c(0, 2), range = c(0,10), breaks = c(0.1, 0.25, 0.50, 0.75)) +
+  facet_nested(. ~ Treatment + mtORF + haplotype, scales="free", space="free") +
+  # scale_fill_manual(values = x) +
+  # scale_y_discrete(limits = rev(levels(long.withtaxa.sw$ASV))) +
+  # theme(axis.text.x = element_blank(), axis.ticks.x = element_blank()) +
+  labs(size = "Relative Abundance", color = "Genera") +
+  guides(fill = guide_legend(override.aes = list(size = 4)))
+```
+```{r}
+# One thing I want to do is havve the phylogenetic tree next to the plot
+bubble_data %>% ggplot(aes(x = Sample_ID, y = ASV, fill = Family)) +
+  geom_point(aes(size = relative_abundance*100), alpha = 0.9, shape = 21) +
+  # scale_size_continuous(limits = c(0, 2), range = c(0,10), breaks = c(0.1, 0.25, 0.50, 0.75)) +
+  facet_nested(. ~ Treatment + mtORF + haplotype, scales="free", space="free") +
+  # scale_fill_manual(values = x) +
+  # scale_y_discrete(limits = (levels(bubble_0.05$ASV))) +
+  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank()) +
+  labs(size = "Relative Abundance", color = "Genera") +
+  guides(fill = guide_legend(override.aes = list(size = 4)))
+```
+```{r}
+ps_filtered_rel_0.05 %>% plot_tree()
+```
+
 
 ## Summary
 ```{r}
 sessionInfo()
+```
+
+```{r}
+write_csv(families_treatment_contrast, "./outputs/families_treatment_contrast.csv")
+families_treatment_contrast$Treatment <- factor(families_treatment_contrast$Treatment, levels = treatment_levels, ordered = TRUE)
+plot <- families_treatment_contrast %>% ggplot(aes(Family, Cumulative_Rel_Abundance, color = Treatment)) + geom_point() + scale_color_manual(values = treatcolors) + coord_flip()
+print(plot)
 ```
 

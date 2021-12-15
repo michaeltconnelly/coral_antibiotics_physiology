@@ -1,0 +1,152 @@
+---
+title: "Pocillopora mtORF analysis"
+author: "Mike Connelly"
+date: "7/9/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "/Users/mikeconnelly/computing/projects/anti_phys")
+```
+```{r packages}
+library("tidyverse")
+library("ape")
+library("pegas")
+```
+```{r genotype_metadata}
+genotypes <- read_csv("data/genotypes.csv")
+genotype_colors <- read_csv("data/genotype_colors.csv") # color names csv corresponding to excel sheet colors
+```
+## RSMAS Pocillopora corals
+### Import mtORF sequence alignment 
+```{r import_alignment}
+data <- read.dna("./data/mtorf/mtorf_alignment_828bp_rsmas.fasta", format = "fasta")
+checkAlignment(data)
+#14 sequences, 828 sites
+# attributes(data)
+# dimnames(data)[[1]]
+```
+```{r haplotypes}
+dataHaplo <- haplotype(data)
+dataHaplo
+# 6 unique haplotypes
+  # I  II III  IV   V  VI 
+  # 4   3   1   2   2   2 
+# summary(dataHaplo)
+```
+```{r extract haplotypes and build network}
+dataHaplo <- sort(dataHaplo, what = "labels")
+# attributes(dataHaplo)
+dataNet <- haploNet(dataHaplo)
+```
+```{r extract sequence labels}
+seq_labels <- dimnames(data)[[1]]
+seq_labels
+```
+```{r countHap}
+countHap <- function(hap = h, dna = x){
+  with(
+    stack(setNames(attr(hap, "index"), rownames(hap))),
+    table(haplotype = ind, Genotype = attr(dna, "dimnames")[[1]][values])
+  )
+}
+```
+```{r genotype haplotype matches}
+# df <- as.data.frame(countHap(dataHaplo, data))
+# good <- df %>% filter(Freq == 1)
+# 
+# genotypes <- left_join(genotypes, good, by = "Genotype") %>% 
+#   dplyr::select(-Freq) %>% 
+#   mutate(mtORF = ifelse(haplotype %in% c("II", "IV"), "Type_3", "Type_1"))
+```
+```{r genotype sort and colors}
+genotypes <- genotypes %>% arrange(Genotype, seq_labels)
+genocolors <- genotype_colors %>% arrange(Genotype, seq_labels) %>% dplyr::select(color)
+```
+
+### Plot haplotype networks
+```{r basic haplotype net}
+plot(dataNet)
+```
+```{r blank haplotype net}
+# pdf(file="~/Desktop/mtORF_haplotypes_sites.pdf", width = 8, height = 10, pointsize = 10)
+plot(dataNet,
+     size = attr(dataNet, "freq"),
+     show.mutation = 1,
+     labels = FALSE,
+     legend = c(-20,20))
+# dev.off()
+```
+```{r metadata haplotype frequencies}
+Gulf <- haploFreq(data, genotypes$Gulf, haplo = dataHaplo)
+Loc <- haploFreq(data, genotypes$Location, haplo = dataHaplo)
+Type <- haploFreq(data, genotypes$mtORF, haplo = dataHaplo)
+Geno <- haploFreq(data, genotypes$Genotype, haplo = dataHaplo)
+```
+```{r colored haplonet}
+pdf(file="./outputs/figures/mtORF_haplotypes_genotypes.pdf", width = 4, height = 5, pointsize = 6)
+plot(dataNet,
+     size = attr(dataNet, "freq"),
+     pie = Geno,
+     bg = genocolors$color,
+     show.mutation = 1,
+     labels = FALSE,
+     legend = c(-3,18))
+dev.off()
+```
+```{r}
+pdf(file="./outputs/figures/mtORF_haplotypes_gulf.pdf", width = 4, height = 5, pointsize = 6)
+plot(dataNet,
+     size = attr(dataNet, "freq"),
+     pie = Gulf,
+     bg = c("orange","blue"),
+     show.mutation = 1,
+     labels = FALSE,
+     legend = c(-3,18))
+dev.off()
+```
+```{r}
+pdf(file="./outputs/figures/mtORF_haplotypes_type.pdf", width = 4, height = 5, pointsize = 6)
+plot(dataNet,
+     size = attr(dataNet, "freq"),
+     pie = Type,
+     # bg = c("orange","blue"),
+     show.mutation = 1,
+     labels = TRUE,
+     legend = c(-3,18))
+dev.off()
+```
+## Pocillopora corals from previous studies
+```{r mtORF sequences}
+mtorf_sequences <- read_csv("./data/mtorf/mtorf_sequences.csv")
+```
+### Import mtORF sequence alignments
+```{r import published data}
+# RSMAS genotypes + Pinzon & LaJeunesse 2011 unique haplotypes
+data_2 <- read.dna("./data/mtorf/mtorf_alignment_828bp_pinzon2011.fasta", format = "fasta")
+checkAlignment(data_2)
+#18 sequences, 828 sites
+```
+```{r haplotypes}
+dataHaplo <- haplotype(data_2)
+dataHaplo
+# 9 unique haplotypes
+   # I   II  III   IV    V   VI  VII VIII   IX 
+   # 4    3    1    2    2    3    1    1    1 
+```
+```{r}
+dataHaplo <- sort(dataHaplo, what = "labels")
+dataNet <- haploNet(dataHaplo)
+```
+
+### Plot haplotype networks
+```{r blank haplotype net}
+# pdf(file="~/Desktop/mtORF_haplotypes_sites.pdf", width = 8, height = 10, pointsize = 10)
+plot(dataNet,
+     size = attr(dataNet, "freq"),
+     show.mutation = 1,
+     labels = FALSE,
+     legend = c(-20,20))
+# dev.off()
+```

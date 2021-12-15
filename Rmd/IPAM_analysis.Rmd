@@ -12,10 +12,11 @@ knitr::opts_knit$set(root.dir = "~/computing/projects/anti_phys")
 ```{r packages}
 library("tidyverse")
 library("ggplot2")
-library("ggpubr")
-library("ggnewscale")
+library("ggh4x") # devtools::install_github("teunbrand/ggh4x") 
+# library("ggpubr")
+# library("ggnewscale")
 ```
-```{r colors}
+```{r colors, include=FALSE}
 #rename to named colors
 treatcolors <- c("lightblue", "dodgerblue", "seagreen1")
 #treatfills <- c()
@@ -26,7 +27,7 @@ genocolors <- c(genotype_colors$color, "grey")
 theme_set(theme_bw())
 ```
 ## Import sample metadata
-```{r genotypes_fragments}
+```{r genotypes_fragments, include=FALSE}
 genotypes <- read_csv("data/genotypes.csv")
 #
 fragments <- read_csv("data/fragments.csv", col_types = cols(
@@ -37,21 +38,21 @@ fragments <- read_csv("data/fragments.csv", col_types = cols(
 treatment_levels <- c("Baseline", "Control", "Antibiotics")
 sampling_levels <- c("Day 0", "Day 7")
 day_levels <- c("day1", "day2", "day3", "day4", "day5")
-genotype_levels <- c("PAN-5", "PAN-10", "PAN-32", "PAN-34", "PAN-35", "PAN-37", "PAN-39", "PAN-41", "PAN-43","PAN-44", "PAN-78", "PAN-79", "PAN-83", "URA-51", NA)
+genotype_levels <- c("PAN-05", "PAN-10", "PAN-32", "PAN-34", "PAN-35", "PAN-37", "PAN-39", "PAN-41", "PAN-43","PAN-44", "PAN-78", "PAN-79", "PAN-83", "URA-51", NA)
 gulf_levels <- c("Chiriqui", "Panama")
 loc_levels <- c("Uva", "Saboga", "Uraba")
-mtorf_levels <- c("Type_1", "Type_2", "Type_3", "unknown")
-sym_levels <- c("C1bc", "C1d", "D1", "unknown")
+mtorf_levels <- c("Type_1", "Type_3")
+sym_levels <- c("C1bc", "C1d", "D1")
 ```
-
 ## Import plate fragment-position keys
-```{r plate_keys}
+```{r plate_keys,include = FALSE}
 # Fragment positions in the 24-well plates were randomized each day during media changes, and positions were maintained through the IPAM assessment, microscopy imaging, and microplate respirometry
 # Information about which fragments or blank wells were in which position needs to be imported and made to correspond with the appropriate AOI information (IPAM) and well position information (respirometry) in the imported source data
 
-# import IPAM area of interest (AOI) to fragment ID keys to later connect measurements to sample metadata
+# Import IPAM area of interest (AOI) to fragment ID keys to later connect measurements to sample metadata
 plate_keys <- list.files(path = "./data/plate_keys", pattern = "plate_key_d[[:digit:]]\\.csv", full.names = T)
-# check to ensure all files are present
+
+# Check to ensure all files are present
 plate_keys
 
 # Create lookup table for AOI_ID from Well_ID
@@ -68,17 +69,22 @@ plate_key_master <- plate_keys %>%
   arrange(Sample_ID) %>% 
   separate(col = Plate_Well_ID, into = c("Plate", "Well"), sep = "-")
 
-# add column that converts the well ID information into AOI for IPAM
+# Add column that converts the well ID information into AOI for IPAM
 plate_key_master$AOI <- as.character(unname(wells_aoi[plate_key_master$Well]))
 
+# Unite into one dataframe
 plate_key_master <- plate_key_master %>% 
   unite(AOI_ID, Plate, AOI, sep = "_", remove = FALSE) %>% 
   unite(AOI_ID_key, Meas_Day, AOI_ID, sep = "_", remove = FALSE) %>% 
   unite(Well_ID, Plate, Well, sep = "_", remove = FALSE) %>% 
   unite(Well_ID_key, Meas_Day, Well_ID, sep = "_", remove = FALSE) %>% 
   arrange(Well_ID_key)
+
+# Attach metadata from keys
+day_plate <- plate_key_master %>% 
+  arrange(Well_ID_key)
 ```
-## Import IPAM data
+## Import IPAM data files
 ```{r ipam_data, message=FALSE, warning=FALSE}
 # List all plate information files in the target import directory
 ipam_data_files <- list.files(path = "./data/ipam", pattern = "*.csv", full.names = T)
@@ -102,6 +108,7 @@ ipam_plates_df <- sapply(ipam_data_files[1:30], # ignore ipam measurements taken
 
 # check ipam data frame
 ipam_plates_df
+# 163 obs. of 77 variables
 ```
 
 ```{r ipam_tidy}
@@ -109,7 +116,7 @@ ipam_plates_data <- ipam_plates_df %>%
   # filter only three measurements after initial F0 record on 60-second intervals
   filter(No. < 5 & No. > 1) %>% 
   # regex to parse measurement day and plate number
-  extract(col = path, into = c("Meas_Day", "Plate", "Date_B"), regex = "^./data/ipam/(day[0-7])_plate([[:alnum:]]{1,2})_([[:digit:]]{6}).csv$") 
+  tidyr::extract(col = path, into = c("Meas_Day", "Plate", "Date_B"), regex = "^./data/ipam/(day[0-7])_plate([[:alnum:]]{1,2})_([[:digit:]]{6}).csv$") 
 
 # Tidy data according to initial format and sample AOI information
 ipam_tidy <- ipam_plates_data %>%
@@ -130,7 +137,7 @@ ipam_tidied <- ipam_tidy %>%
 ipam_complete <- ipam_tidied %>% 
   group_by(Meas_Day, AOI_ID) %>% 
   # summarize across three replicates to obtain averaged Y(II) values for 144 wells (24x6)
-  summarise(mean_value = mean(value)) %>%
+  dplyr::summarise(mean_value = mean(value)) %>%
   unite(AOI_ID_key, Meas_Day, AOI_ID, sep = "_", remove = FALSE) %>% 
   # join with plate key to obtain fragment positions
   left_join(plate_key_master, by = "AOI_ID_key") %>% 
@@ -139,14 +146,19 @@ ipam_complete <- ipam_tidied %>%
   # join with fragments and genotypes to link metadata
   left_join(fragments, by = "Fragment_ID") %>%
   left_join(genotypes, by = "Genotype")
-
+# yields 720 x 20 data frame
 
 # set factor levels
 ipam_complete$Genotype <- factor(ipam_complete$Genotype, levels = genotype_levels, ordered = TRUE)
 ipam_complete$Treatment <- factor(ipam_complete$Treatment, levels = treatment_levels, ordered = TRUE)
 ipam_complete$Meas_Day <- factor(ipam_complete$Meas_Day, levels = day_levels, ordered = TRUE)
 ```
-
+```{r filter fragments}
+ipam_fragments <- ipam_complete %>% 
+  filter(Sample_ID != "b")
+ipam_fragments$Day<-as.integer(ipam_fragments$Meas_Day)
+ipam_fragments$DayF <- factor(ipam_fragments$Day)
+```
 ## Exploratory visualizations
 ```{r single-day_ipam_boxplot}
 ipam_boxplot <- ipam_complete %>% 
@@ -161,8 +173,7 @@ ipam_boxplot
 # ggsave("outputs/figures/ipam_day5_boxplot.pdf", ipam_boxplot,  device = "pdf", height = 4, width = 10)
 ```
 ```{r daily_ipam_treatment_comp}
-ipam_complete %>% 
-  filter(!is.na(Fragment_ID)) %>% 
+ipam_fragments %>% 
   ggplot(aes(Treatment, mean_value, fill = Genotype)) +
   geom_boxplot() +
   geom_jitter(shape = 21) +
@@ -171,41 +182,23 @@ ipam_complete %>%
   ylim(c(0.0, 0.8)) +
   scale_fill_manual(values = genocolors)
 ```
-```{r ipam_progression_plots}
-ipam_complete %>% 
-  filter(!is.na(Fragment_ID)) %>%
-  filter(Gulf == "Chiriqui") %>%
-  ggplot(aes(Meas_Day, mean_value)) +
-  geom_boxplot(aes(fill = Genotype)) +
-  geom_point(aes(color = Treatment)) +
-  geom_path(aes(group = Fragment_ID)) +
-  facet_grid(Treatment~Genotype) +
-  scale_fill_manual(values = genocolors) + 
-  scale_color_manual(values = treatcolors[2:3])
-  
-```
 
-```{r}
-ipam_progression_boxplot_genotype_its2 <- ipam_complete %>% 
-  filter(!is.na(Fragment_ID)) %>%
+```{r }
+ipam_progression_boxplot_genotype_its2 <- ipam_fragments %>% 
   # filter(Gulf == "Chiriqui") %>%
   # filter(Gulf == "Panama") %>%
-  ggplot(aes(Meas_Day, mean_value, group = Genotype, color = Genotype)) +
-  geom_point(aes(color = Genotype), alpha = 0.3) +
-  stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", width = 0.2 ) +
-  stat_summary(fun = mean, geom = "line") +
-  # geom_boxplot(aes(fill = Treatment)) +
-  # geom_path(aes(group = Sample_ID, color = Genotype)) +
-  # facet_wrap(~Genotype + Treatment) +
-  # facet_grid(.~ITS2 + Treatment)+
-  facet_nested(. ~ ITS2 + Treatment, scales = "free_x", space = "free", switch = NULL) +
-  scale_color_manual(values = genocolors) +
-  scale_fill_manual(values = treatcolors[2:3]) + 
+  ggplot(aes(DayF, mean_value, group = Treatment, color = Treatment, fill = Genotype)) + # linetype = Treatment
+  geom_point(aes(color = Treatment), shape = 21, alpha = 0.8, position = position_dodge(0.25)) +
+  # stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", width = 0.2, position = position_dodge(0.25)) +
+  # stat_summary(fun = mean, geom = "line") +
+  # facet_nested(. ~ ITS2 + Genotype, scales = "free_x", space = "free", switch = NULL) +
+  scale_color_manual(values = treatcolors[2:3]) +
+  scale_fill_manual(values = genocolors) + 
   ylim(0.25, 0.75) +
-  labs(x = "Experiment Day", y = "Fv/Fm values") +
+  # labs(x = "Day", y = "Fv/Fm values") +
   ggtitle(title)
 ipam_progression_boxplot_genotype_its2
-ggsave("./outputs/figures/ipam_progression_plot_its2_genotype.pdf", ipam_progression_boxplot_genotype_its2, device = "pdf", height = 5, width = 11)
+# ggsave("./outputs/figures/ipam_progression_plot_genotype_its2.pdf", ipam_progression_boxplot_genotype_its2, device = "pdf", height = 5, width = 11)
 # ITS2 type has a significant effect on Fv/Fm values
 # PAN-37, PAN-39, PAN-83, (URA-51) are candidates for symbiont switching after Ana initally characterized them
 ```
@@ -218,82 +211,77 @@ genotype_summary <- ipam_complete %>%
 
 genotype_summary$Treatment <- factor(genotype_summary$Treatment, levels = treatment_levels, ordered = TRUE)
 ```
-```{r genotype_ipam_progression_plot}
+
+```{r}
+YII_Genotype <- ggplot(ipam_fragments, aes(DayF, mean_value, color = Genotype, group = Genotype)) +
+  geom_point(alpha=0.3) +
+  stat_summary(fun.data = "mean_se", geom = "errorbar", width = 0.2 ) + # or mean_cl_boot
+  stat_summary(fun.y=mean, geom = "line") +
+  scale_color_manual(values = genocolors) 
+
+YII_Genotype + ylim(0.25, 0.7) + facet_grid(ITS2~Treatment)
+YII_Genotype + ylim(0.25, 0.7) + facet_grid(mtORF~Treatment)
+YII_Genotype + ylim(0.25, 0.7) + facet_grid(Location~Treatment)
+```
+```{r}
+# Treatment 
+YII_Treatment <- ggplot(ipam_fragments, aes(DayF, mean_value, colour=Treatment, group=Treatment)) +
+  stat_summary(fun.data = "mean_se",geom = "errorbar", width = 0.2, position = position_dodge(0.1))+
+  #stat_summary(fun.y=mean, geom="point", size =3, alpha=0.5) +
+  stat_summary(fun.y=mean, geom="line") +
+      scale_color_manual(values = treatcolors[2:3]) +
+      scale_y_continuous(breaks = seq(0.4, 0.7, 0.1),  
+                         name=("Photochemical efficiency (Fv/Fm)")) +
+      scale_x_discrete(name="Day") +
+    coord_cartesian(ylim=c(0.4, 0.7))
+# YII_Treatment
+# YII_Treatment + facet_wrap(~mtORF)
 title <- expression(paste(italic("Pocillopora"), " Symbiodinaceae Fv/Fm values during experiment", collapse = ""))
-genotype_ipam_progression_boxplot <- ipam_complete %>% 
-  filter(!is.na(Fragment_ID)) %>%
-  # filter(Gulf == "Chiriqui") %>%
-  # filter(Gulf == "Panama") %>%
-  ggplot(aes(Meas_Day, mean_value)) +
-  geom_boxplot(aes(fill = Treatment)) +
-  geom_path(data = genotype_summary, aes(Meas_Day, geno_mean_value, group = Genotype, color = Genotype)) +
-  geom_point(data = genotype_summary, aes(Meas_Day, geno_mean_value, color = Genotype), size = 5) +
-  # geom_path(aes(group = Sample_ID, color = Genotype)) +
-  # geom_point(aes(color = Genotype)) +
-  # facet_wrap(~Genotype + Treatment) +
-  facet_grid(.~Treatment)+
-  scale_color_manual(values = genocolors) +
-  scale_fill_manual(values = treatcolors[2:3]) + 
-  ggtitle(title)
-genotype_ipam_progression_boxplot
-# ggsave("./outputs/figures/genotype_ipam_progression_boxplot.pdf", genotype_ipam_progression_boxplot, device = "pdf", height = 5, width = 10)
+YII_Treatment + facet_wrap(~ITS2) + ggtitle(title)
+# YII_Treatment + facet_wrap(~Genotype)
+# ggsave("./outputs/figures/ipam_progression_plot_its2_treatment.pdf", device = "pdf", height = 5, width = 11)
 ```
-```{r ipam_symbiont_type_boxplot}
-ipam_its2 <- ipam_complete %>% 
-  filter(!is.na(Fragment_ID)) %>% 
-  ggplot(aes(Meas_Day, mean_value)) +
-  geom_boxplot(aes(fill = Treatment)) +
-  geom_point(aes(Meas_Day, mean_value, color = Genotype), size = 2) +
-  facet_grid(~ ITS2 + Treatment, switch = "y") +
-  ylim(c(0.0, 0.8)) +
-  scale_color_manual(values = genocolors) +
-  scale_fill_manual(values = treatcolors[2:3])
-print(ipam_its2)
-ggsave("./outputs/figures/genotype_ipam_its2_boxplot", ipam_its2, device = "pdf", height = 5, width = 16)
-```
-```{r genotype_trait_grid}
-gridtitle <- "Pocillopora coral mtORF types and symbiont ITS2 types"
-geno_grid <- ipam_complete %>% 
-  filter(!is.na(Fragment_ID)) %>%
-  # filter(Gulf == "Chiriqui") %>%
-  # filter(Gulf == "Panama") %>%
-  ggplot(aes(x = Gulf)) +
-  facet_grid(mtORF~ITS2, switch = "y") + ggtitle(gridtitle)
-# ggsave("./outputs/figures/genotype_grid.pdf", geno_grid, device = "pdf", height = 6, width = 10)
+```{r dissertation figure 4.2}
+ipam_plot <- ipam_fragments %>% ggplot(aes(DayF, mean_value, colour=Treatment, group=Treatment)) +
+  stat_summary(fun.data = "mean_se",geom = "errorbar", width = 0.2, position = position_dodge(0.1))+
+  stat_summary(fun.y=mean, geom="point", size = 2, alpha=0.8, position = position_dodge(0.1)) +
+  stat_summary(fun.y=mean, geom="line") +
+      scale_color_manual(values = treatcolors[2:3]) +
+      scale_y_continuous(breaks = seq(0.4, 0.7, 0.1),  
+                         name=("Photochemical efficiency (Fv/Fm)")) +
+      scale_x_discrete(name="Day") +
+    coord_cartesian(ylim=c(0.3, 0.7))
+
+ipam_plot + facet_nested(. ~ mtORF + Symbiont_Genus, scales = "free_x", space = "free", switch = NULL)
+ggsave("./outputs/figures/ipam_progression_plot_mtorf_symbiont.pdf", device = "pdf", height = 3.5, width = 6)
 ```
 
 ## Statistical analysis
-```{r}
-ipam_fragments <- ipam_complete %>% 
-  filter(Sample_ID != "b")
-```
 ### Summary statistics
-```{r}
+```{r summary stats}
 # Blank well Fv/Fm
 ipam_complete %>% 
   filter(Sample_ID == "b") %>% 
   summarise(
     mean_fvfm = mean(mean_value),
-    stdev_fvfm = sd(mean_value)
+    se_fvfm = se(mean_value)
   )
 # Microfragment Fv/Fm
 ipam_complete %>% 
   filter(Sample_ID != "b") %>% 
   summarise(
     mean_fvfm = mean(mean_value),
-    stdev_fvfm = sd(mean_value)
+    se_fvfm = se(mean_value)
   )
-# Microfragment Fv/Fm
+# Microfragment Fv/Fm grouped by ITS2, Treatment
 ipam_complete %>% 
   filter(Sample_ID != "b") %>%
   group_by(ITS2, Treatment) %>% 
   summarise(
     mean_fvfm = mean(mean_value),
-    stdev_fvfm = sd(mean_value)
+    sedev_fvfm = se(mean_value)
   )
 ```
-
-
 ```{r normality_tests}
 # Tests for normality 
 shapiro.test(asin(ipam_fragments$mean_value))
@@ -306,7 +294,7 @@ ggqqplot((ipam_fragments$mean_value))
 ggdensity(asin(ipam_fragments$mean_value))
 ggqqplot(asin(ipam_fragments$mean_value))
 ```
-```{r}
+```{r two way anova}
 # Two-way ANOVA to test significance of treatment and time factors
 ipam_anova <- aov(mean_value ~ Treatment + Meas_Day + Treatment:Meas_Day, data = ipam_fragments)
 summary(ipam_anova)
@@ -352,51 +340,9 @@ library("gvlma")
 gvmodel <- gvlma(m1)
 summary(m1)
 ```
-### Mixed-effect linear models
-```{r}
-ipam_fragments <- ipam_fragments
-ipam_fragments$Day<-as.integer(ipam_fragments$Meas_Day)
-```
-```{r}
 
-YII_Genotype<- ggplot(ipam_fragments, aes (Day, mean_value, color = Genotype)) +
-  geom_point(alpha=0.3) +
-  stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", width = 0.2 ) +
-  stat_summary(fun.y=mean, geom = "line") +
-  scale_color_manual(values = genocolors) +
-  theme_classic()
-
-YII_Genotype + ylim(0.25, 0.7) + facet_grid(ITS2~Treatment)
-YII_Genotype + ylim(0.25, 0.7) + facet_grid(mtORF~Treatment)
-YII_Genotype + ylim(0.25, 0.7) + facet_grid(Location~Treatment)
-```
-```{r}
-# Treatment 
-YII_Treatment<- ggplot(ipam_fragments, aes (Day, mean_value, colour=Treatment)) +
-  stat_summary(fun.data = "mean_cl_boot",geom = "errorbar", width = 0.2)+
-  #stat_summary(fun.y=mean, geom="point", size =3, alpha=0.5) +
-  stat_summary(fun.y=mean, geom="line") + theme_classic()+
-  theme(plot.background=element_blank(), 
-            panel.border = element_blank(),
-            axis.line = element_line(colour = "black"),
-            panel.grid.major = element_blank(),
-            panel.grid.minor = element_blank(),
-            legend.position="bottom",
-            strip.background = element_rect(fill="white")) +
-      scale_color_manual(values = treatcolors[2:3]) +
-      scale_y_continuous(limits = c(0.1, 0.7),
-                         breaks = seq(0.2, 0.6,0.2),  
-                         expand = c(0, 0),
-                         name=("YII (Fv/Fm)")) +
-      scale_x_continuous(name="Days in the experiment",
-                         limits = c(0,6),
-                         breaks = seq(0, 6, 1),  
-                         expand = c(0, 0))
-YII_Treatment
-YII_Treatment + facet_wrap(~mtORF)
-YII_Treatment + facet_wrap(~ITS2)
-```
-```{r}
+### Linear mixed-effect models
+```{r lme libraries, include = FALSE}
 # Libraries 
   library("lme4")
   library("multcomp")
@@ -404,52 +350,68 @@ YII_Treatment + facet_wrap(~ITS2)
   library("emmeans")
   library("effects")
   library("lmerTest")
+#https://ourcodingclub.github.io/tutorials/mixed-models/
+#https://stats.stackexchange.com/questions/4700/what-is-the-difference-between-fixed-effect-random-effect-and-mixed-effect-mode
 ```
-
-If you use day as a factor:
-
-* mtORF and ITS2 considered random effects
-* Day (as factor, not numeric) and Treatment considered fixed effect (what you are really testing)
-
-
-```{r}
-ipam_fragments$DayF<-as.factor(ipam_fragments$Day)
-LM_1 <- lmer(mean_value ~ Treatment * DayF + 
-                             (1|mtORF) + (1|ITS2), REML=TRUE, data= ipam_fragments)
-anova(LM_1)
-ranova(LM_1)
-step(LM_1)
-# * fv/Fm is significantly different (not a surprise given day 2 data)
-# * No treatment effect
-# * Both, ORF and ITS2 are significant
+#### Model #1: Treatment x Day, random ITS2, mtORF effects
+```{r lme model 1}
+# If you use day as a factor:
+# * mtORF and ITS2 considered random effects
+# * Day (as factor, not numeric) and Treatment considered fixed effect (what you are really testing)
+ipam_lme_1 <- lmer(mean_value ~ Treatment * DayF + 
+                            (1|mtORF) + (1|Symbiont_Genus), REML=TRUE, data = ipam_fragments)
+summary(ipam_lme_1)
+#
+anova(ipam_lme_1)
+#
+ranova(ipam_lme_1)
+#
+step(ipam_lme_1)
+# Fv/Fm is significantly different between days, no significant treatment fixed effect
+# Significant mtORF and ITS2 random effects  
 ```
-```{r effect_plot}
-pdf("./outputs/figures/ipam/ipam_treatment_effect.pdf", width = 8, height = 6)
-plot(Effect(c("Treatment","DayF"), LM_1), x.var="DayF", multiline = T, ci.style="bars")
+```{r lme_1 effect plot}
+# pdf("./outputs/figures/ipam/ipam_treatment_effect.pdf", width = 8, height = 6)
+plot(Effect(c("Treatment","DayF"), ipam_lme_1), x.var="DayF",
+     multiline = T, ci.style="bars", colors = treatcolors[2:3])
 # Clear that there is no treatment effect after controlling for other random factors
-dev.off()
+# dev.off()
+```
+#### Model #2: Treatment x Day, random Genotype effect
+```{r lme model 2}
+ipam_lme_2 <- lmer(mean_value ~ Treatment * DayF + (1|Genotype), REML=TRUE, data = ipam_fragments)
+#
+summary(ipam_lme_2)
+#
+anova(ipam_lme_2)
+#
+ranova(ipam_lme_2)
+#
+step(ipam_lme_2)
+```
+```{r lme_2 effect plot}
+# pdf("./outputs/figures/ipam/ipam_treatment_effect.pdf", width = 8, height = 6)
+plot(Effect(c("Treatment","DayF"), ipam_lme_2), x.var="DayF",
+     multiline = T, ci.style="bars", colors = treatcolors[2:3])
+# Clear that there is no treatment effect after controlling for other random factors
+# dev.off()
+```
+#### Model #3
+```{r lme model 3: }
+ipam_lme_3 <- lmer(mean_value ~ ITS2 + mtORF + (1|Treatment), REML=TRUE,  data= ipam_fragments)
+
+anova(ipam_lme_3)
+#
+ranova(ipam_lme_3)
+#
+step(ipam_lme_3)
 ```
 ```{r}
-Effect(c("Treatment","DayF"), LM_1)
-```
-
-# To look at the ITS2, ORF, etc
-
-This is kind of mesningless until we close the gaps in ITS2 and ORF, other option is discard genotypes with "unknown" and run with the genotyped corals.  
-
-
-```{r make ITS2 the question}
-LM_2 <- lmer(mean_value ~ ITS2 + mtORF + 
-                             (1|DayF), REML=TRUE,  data= ipam_fragments)
-anova(LM_2)
-ranova(LM_2)
-step(LM_2)
 #  Pair-wise comparisons
-cld(emmeans(LM_2, "mtORF"))
-YIIEmm<-cld(emmeans(LM_2, specs = c("ITS2")))
+cld(emmeans(LM_3, specs = c("mtORF")))
+cld(emmeans(LM_3, specs = c("ITS2")))
 #write.csv(YIIAcerEmm, "YIIAcerEmm.csv")
 ```
-
 ## Summary
 ```{r}
 sessionInfo()

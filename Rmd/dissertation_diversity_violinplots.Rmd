@@ -1,0 +1,59 @@
+---
+title: "Untitled"
+author: "Mike Connelly"
+date: "7/21/2021"
+output: html_document
+---
+
+```{r alpha_boxplot}
+obs_box <- ps_filtered_samples %>% plot_richness(., x="Treatment", measures=c("Observed")) +
+  geom_violin(aes(fill = Treatment)) +
+  geom_jitter(color = "black", width = 0.05, shape = 1, size = 1, stroke = 1, show.legend = TRUE) +
+  stat_summary(fun.data = "mean_se",geom = "errorbar", width = 0.2, position = position_dodge(0.1))+
+  stat_summary(fun.y=mean, geom ="point", color = "black", size = 2, alpha = 0.9) +
+  scale_color_manual(values = genocolors) +
+  scale_fill_manual(values = treatcolors) +
+  # scale_shape_manual(values = colshapes, name="Colony") + 
+  # ylim(c(0,20)) +
+  xlab(NULL) +
+  ylab("Observed ASV richness") +
+  ggtitle("Observed ASV alpha diversity violin plot") +
+  theme_bw() +
+  theme(
+          axis.text.x = element_text(angle = 0),
+        strip.background = element_blank(),
+        strip.text = element_blank()) 
+obs_box
+ggsave(obs_box, filename = "./outputs/phyloseq_results/figures/observedASVs_boxplot_1.pdf",  width = 6, height = 4, units = "in", device = "pdf")
+```
+
+```{r beta_boxplot}
+# Draw a boxplot of the distances to centroid for each group
+# # first extract the distances to centroids
+# mod$distance
+mod_distance <- data.frame(mod$distance) %>%
+  rownames_to_column(., "Sample_ID") %>%
+  left_join(., sample_metadata, by = "Sample_ID", .keep = TRUE)
+# # 
+beta_boxplot <- mod_distance %>%
+  ggplot(aes(Treatment, mod.distance)) + 
+  geom_violin(aes(fill = Treatment)) +
+  geom_jitter(color = "black", width = 0.05, shape = 1, size = 1, stroke = 1, show.legend = TRUE) +
+  stat_summary(fun.data = "mean_se",geom = "errorbar", width = 0.2, position = position_dodge(0.1))+
+  stat_summary(fun.y=mean, geom ="point", color = "black", size = 2, alpha = 0.9) +
+  scale_color_manual(values = genocolors) +
+  scale_fill_manual(values = treatcolors) +
+  # scale_shape_manual(values = colshapes, name="Colony") + 
+  # scale_x_discrete(labels = c("C", "H", "A", "A+H")) +
+  #ylim(c(0,100)) +
+  xlab(NULL) +
+  ylab("Distance to centroid") +
+  coord_cartesian(ylim = c(0,125)) +
+  ggtitle("Beta diversity distance to centroid violin plot") +
+  theme(legend.position = "none",
+          axis.text.x = element_text(angle = 0),
+        strip.background = element_blank(),
+        strip.text = element_blank()) + theme_bw()
+beta_boxplot
+ggsave(beta_boxplot, filename = "./outputs/phyloseq_results/figures/beta_dist-centroid_boxplot_1.pdf", width = 6, height = 4, units = "in", device = "pdf")
+```
