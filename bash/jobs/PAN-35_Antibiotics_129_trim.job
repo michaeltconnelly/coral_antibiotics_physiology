@@ -1,0 +1,18 @@
+#!/bin/bash
+#BSUB -q general
+#BSUB -J PAN-35_Antibiotics_129_trim
+#BSUB -o "/scratch/projects/transcriptomics/mikeconnelly/projects/anti_phys"/outputs/logfiles/PAN-35_Antibiotics_129_trim.out
+#BSUB -e "/scratch/projects/transcriptomics/mikeconnelly/projects/anti_phys"/outputs/errorfiles/PAN-35_Antibiotics_129_trim.err
+module load java/1.8.0_60
+echo Trimming PAN-35_Antibiotics_129
+~/programs/bbmap/bbduk.sh -Xmx512m \
+in=/scratch/projects/transcriptomics/mikeconnelly/projects/anti_phys/data/quantseq_reads/PAN-35_Antibiotics_129.fastq \
+out=/scratch/projects/transcriptomics/mikeconnelly/projects/anti_phys/outputs/trimmed_reads/PAN-35_Antibiotics_129_trimmed.fastq \
+ref=/scratch/projects/transcriptomics/mikeconnelly/projects/anti_phys/data/bbmap_resources/polyA.fa.gz,/scratch/projects/transcriptomics/mikeconnelly/projects/anti_phys/data/bbmap_resources/truseq_rna.fa.gz \
+k=13 \
+ktrim=r \
+useshortkmers=T \
+mink=5 \
+qtrim=10 \
+minlength=20
+echo PAN-35_Antibiotics_129 successfully trimmed
