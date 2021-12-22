@@ -40,8 +40,8 @@ echo '#BSUB -e "'${prodir}'"/outputs/errorfiles/'"${sample}"'_trim.err' >> ${pro
 echo 'module load java/1.8.0_60' >> ${prodir}/bash/jobs/"${sample}"_trim.job
 
 #   input command to unzip raw reads before trimming
-#echo 'echo 'Unzipping "${sample}"'' >> "${prodir}"/bash/jobs/"${sample}"_trim.job
-#echo 'gunzip '"${prodir}"/data/quantseq_reads/"${sample}".fastq.gz >> "${prodir}"/bash/jobs/"${sample}"_trim.job
+echo 'echo 'Unzipping "${sample}"'' >> "${prodir}"/bash/jobs/"${sample}"_trim.job
+echo 'gunzip '"${prodir}"/data/quantseq_reads/"${sample}".fastq.gz >> "${prodir}"/bash/jobs/"${sample}"_trim.job
 
 #   input command to trim raw reads
 echo 'echo 'Trimming "${sample}"'' >> "${prodir}"/bash/jobs/"${sample}"_trim.job
