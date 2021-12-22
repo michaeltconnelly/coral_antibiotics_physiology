@@ -42,7 +42,7 @@ echo ${mcs}/programs/STAR-2.5.3a/bin/Linux_x86_64/STAR \
 --runMode alignReads \
 --quantMode TranscriptomeSAM \
 --runThreadN 16 \
---readFilesIn ${prodir}/outputs/trimmed_reads/${sample}_trimmed.fastq \
+--readFilesIn ${prodir}/outputs/trimmed_reads_round2/${sample}_trimmed.fastq \
 --genomeDir ${mcs}/sequences/genomes/coral/pocillopora/STARindex \
 --sjdbGTFfeatureExon exon \
 --sjdbGTFtagExonParentTranscript Parent \

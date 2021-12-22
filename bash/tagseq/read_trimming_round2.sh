@@ -47,8 +47,8 @@ echo 'gunzip '"${prodir}"/data/quantseq_reads/"${sample}".fastq.gz >> "${prodir}
 echo 'echo 'Trimming "${sample}"'' >> "${prodir}"/bash/jobs/"${sample}"_trim.job
 
 echo '~/programs/bbmap/bbduk.sh -Xmx512m \
-in='"${prodir}"'/data/quantseq_reads/'"${sample}"'_R1.fastq \
-out='"${prodir}"'/outputs/trimmed_reads/'"${sample}"'_trimmed.fastq \
+in='"${prodir}"'/data/quantseq_reads_2/'"${sample}"'_R1.fastq \
+out='"${prodir}"'/outputs/trimmed_reads_round2/'"${sample}"'_trimmed.fastq \
 ref='"${prodir}"'/data/bbmap_resources/polyA.fa.gz,'"${prodir}"'/data/bbmap_resources/truseq_rna.fa.gz \
 k=13 \
 ktrim=r \
