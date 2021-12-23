@@ -3,8 +3,12 @@
 .Rproj*
 .Rproj.user
 .RData
-./data/resp/
-./data/ipam/
-./data/reads_bacteria/
-./data/classifiers/
-./data/image*
+data/resp/
+data/ipam/
+data/reads_bacteria/
+data/*zip
+data/classifiers/
+data/pdam_annotations/
+data/image*
+data/mtorf/
+outputs
