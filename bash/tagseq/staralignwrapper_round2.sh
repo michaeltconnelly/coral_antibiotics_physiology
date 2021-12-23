@@ -32,8 +32,8 @@ echo "Aligning ${sample}"
 echo '#!/bin/bash' > "${prodir}"/bash/jobs/"${sample}"_staralign_pdam.job
 echo '#BSUB -q bigmem' >> "${prodir}"/bash/jobs/"${sample}"_staralign_pdam.job
 echo '#BSUB -J '"${sample}"_staralign_pdam'' >> "${prodir}"/bash/jobs/"${sample}"_staralign_pdam.job
-echo '#BSUB -o '"${prodir}"/outputs/logfiles/"$sample"staralign_pdam%J.out'' >> "${prodir}"/bash/jobs/"${sample}"_staralign_pdam.job
-echo '#BSUB -e '"${prodir}"/outputs/errorfiles/"$sample"staralign_pdam%J.err'' >> "${prodir}"/bash/jobs/"${sample}"_staralign_pdam.job
+echo '#BSUB -o '"${prodir}"/outputs/logfiles/"$sample"staralign_pdam_%J.out'' >> "${prodir}"/bash/jobs/"${sample}"_staralign_pdam.job
+echo '#BSUB -e '"${prodir}"/outputs/errorfiles/"$sample"staralign_pdam_%J.err'' >> "${prodir}"/bash/jobs/"${sample}"_staralign_pdam.job
 echo '#BSUB -n 8' >> "${prodir}"/bash/jobs/"${sample}"_staralign_pdam.job
 echo '#BSUB -W 4:00' >> "${prodir}"/bash/jobs/"${sample}"_staralign_pdam.job
 
