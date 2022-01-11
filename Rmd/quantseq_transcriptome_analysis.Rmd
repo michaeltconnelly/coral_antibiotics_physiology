@@ -1,13 +1,13 @@
 ---
 title: "quantseq_transcriptome_analysis"
 author: "Mike Connelly"
-date: "3/30/2021"
+date: "1/11/2022"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, cache = TRUE)
-knitr::opts_knit$set(root.dir = "~/computing/projects/anti_phys/")
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
 options(stringsAsFactors = FALSE)
 ```
 
@@ -55,32 +55,16 @@ source("./R/AXH_functions.R")
 ### Set overall theme, colors, and shapes for ggplot2
 # colors for experimental treatments
 treatcolors <- c("lightblue", "dodgerblue", "seagreen1")
-#treatfills <- c()
 shapes <- c(15:20) # may be useful for genotype variables: Gulf, Location, mtORF, symbiont, etc.
 # colors for genotypes
-genotype_colors <- read_csv("data/genotype_colors.csv") %>%
-  dplyr::filter(Genotype %in% c("PAN-78", "PAN-79", "PAN-83"))# color names csv corresponding to excel sheet colors
+genotype_colors <- read_csv("data/genotype_colors.csv") #%>%
+  # dplyr::filter(Genotype %in% c("PAN-78", "PAN-79", "PAN-83"))# color names csv corresponding to excel sheet colors
 genocolors <- c(genotype_colors$color) # default ggplot fill may also work in this case
 # null colors for presentation figures
 condcolors_null <- c(rep("black", 3))
 colshapes_null <- c(rep(20, 8))
 # differential gene expression volcano plot point colors
 DEGcolors <- c("red", "blue", "dark grey")
-# bacteria family key colors
-# bacteria_colors <- colors_families %>% 
-#   filter(Family %in% colnames(datTaxa_Family)) %>% 
-#   dplyr::select(-cum_rel_ab)
-# bacteria_colors$Family <- factor(bacteria_colors$Family, levels = int_families, ordered = TRUE)
-# 
-# bac_colors <- bacteria_colors$colors
-# names(bac_colors) <- bacteria_colors$Family
-# Create colony and condition annotation colors list
-# anno_colors <- list(
-#   Colony = c(HW1=colcolors[1], HW2=colcolors[2], WT1=colcolors[3], WT2=colcolors[4]),
-#   Treatment = c(control=condcolors_AxH[1],  Heat=condcolors_AxH[2], Antibiotics=condcolors_AxH[3], Antibiotics.Heat=condcolors_AxH[4]),
-#   DEG = c(Upregulated="red", Downregulated="blue")#,
-  # Bacteria = bac_colors
-  # )
 # Create sample heatmap cell color
 colonyclustercol <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
 # Create gene expression cell color
@@ -114,16 +98,18 @@ fragments <- read_csv("data/fragments.csv", col_types = cols(
 # factor levels
 # treatment_levels <- c("Baseline", "Control", "Antibiotics", "FSW_Controls", "SW_Controls", "Neg_Controls", "ZYMO_Controls")
 sampling_levels <- c("Day 0", "Day 7")
-genotype_levels <- c("PAN-5", "PAN-10", "PAN-32", "PAN-34", "PAN-35", "PAN-37", "PAN-39", "PAN-41", "PAN-43","PAN-44", "PAN-78", "PAN-79", "PAN-83", "URA-51", NA)
+genotype_levels <- c("PAN-05", "PAN-10", "PAN-32", "PAN-34", "PAN-35", "PAN-37", "PAN-39", "PAN-41", "PAN-43","PAN-44", "PAN-78", "PAN-79", "PAN-83", "URA-51", NA)
 gulf_levels <- c("Chiriqui", "Panama")
 loc_levels <- c("Uva", "Saboga", "Uraba")
-mtorf_levels <- c("Type_1", "Type_2", "Type_3")#, "unknown")
+mtorf_levels <- c("Type_1", "Type_3")#, "unknown")
 sym_levels <- c("C1bc", "C1d", "D1")#, "unknown")
 genus_levels <- c("Cladocopium", "Durusdinium")
 ```
 ```{r  sample_data, echo=TRUE}
 # Import sample metadata 
-sample_metadata <- read_delim("./data/qiime2_metadata.tsv", delim ="\t", col_names = c("Sample_ID", "Genotype", "Treatment", "Sampling_Time", "Location", "Gulf", "mtORF", "ITS2", "Seq_Control", "Neg_Control"), comment = "#")#, row.names = 1, header = FALSE)
+sample_metadata <- read_delim("./data/quantseq_metadata.tsv", delim ="\t", col_names = c("Sample_ID", "Genotype", "Treatment", "Sampling_Time", "Sequencing_Success", "Sequencing_Round"), comment = "#")#, row.names = 1, header = FALSE)
+# join with genotype metadata
+sample_metadata <- sample_metadata %>% left_join(genotypes, by = "Genotype")
 # Set factor orders
 sample_metadata$Genotype <- factor(sample_metadata$Genotype, levels = genotype_levels, ordered = TRUE)
 # sample_metadata$Treatment <- factor(sample_metadata$Treatment, levels = treatment_levels, ordered = TRUE)
@@ -134,26 +120,24 @@ sample_metadata$ITS2 <- factor(sample_metadata$ITS2, levels = sym_levels, ordere
 sample_metadata$Symbiont_Genus <- ifelse(sample_metadata$ITS2 == "D1", "Durusdinium", "Cladocopium")
 # Create phyloseq-compatible sample map
 samples <- sample_metadata %>%
-  dplyr::filter(Genotype %in% c("PAN-78", "PAN-79", "PAN-83")) %>% 
-  dplyr::select(Sample_ID, Genotype, Treatment, Gulf, mtORF, ITS2, Symbiont_Genus) #%>% 
-  #column_to_rownames("Sample_ID")
+  dplyr::filter(Sequencing_Success == T) #%>%
+  # dplyr::select(Sample_ID, Genotype, Treatment, Gulf, mtORF, ITS2, Symbiont_Genus) #%>% 
 ```
 ```{r coldata}
 # Get sample data into tibble
 coldata <- samples %>%
-  as_tibble(.)
-
-coldata <- coldata %>%
+  as_tibble(.) %>%
   mutate(Genotype.Treatment = interaction(Genotype, Treatment)) %>%
   mutate_if(is.character, as.factor) %>% 
-  arrange(Sample_ID) %>% #Order rows by sample name                         
+  dplyr::arrange("Sample_ID") %>% #Order rows by sample name                         
   column_to_rownames(var = "Sample_ID")  
 ```
 
 ## Import *Pocillopora* coral counts data and gene annotation
 ```{r coral_countdata}
 # Import and tidy counts data
-countdata <- read.delim("./outputs/STARcounts_Pdam/PocAnti_Pdam.counts", comment.char="#")
+# countdata <- read.delim("./outputs/STARcounts_Pdam/PocAnti_Pdam.counts", comment.char="#")
+countdata <- read.delim("./outputs/tagseq/STARcounts_Pdam/PocAnti_Pdam_Round2.counts", comment.char="#")
 # Set Gene ID's as row names
 row.names(countdata) <- countdata$Geneid
 # Remove first six columns (Geneid, chr, start, end, strand, length)
@@ -169,13 +153,10 @@ countdata_sorted_coral <- as.data.frame(countdata[order(rownames(countdata)),])
 ```
 ```{r remove_baseline_samples}
 coldata <- coldata %>% 
-  filter(Treatment != "Baseline") %>% 
-  filter(Genotype %in% c("PAN-78", "PAN-79", "PAN-83"))
+  filter(Treatment != "Baseline") 
 countdata_sorted_coral <- countdata_sorted_coral %>% 
-  dplyr::select(!contains("Baseline")) %>% 
-  dplyr::select(!contains(c("PAN-32", "PAN-39", "PAN-43", "PAN-37", "PAN-44", "PAN-34", "PAN-35", "URA-51")))
+  dplyr::select(!contains("Baseline")) 
 ```
-
 ```{r coral_gene_annotation}
 gene_annotation_coral <- read.delim(file = "./data/pdam_genome_annotations.tsv", header = T) %>% arrange(ID)
 rownames(gene_annotation_coral) <- gene_annotation_coral$ID
@@ -189,22 +170,23 @@ gene2kog_coral <- gene_annotation_coral %>%
 ```
 
 ## Import *Cladocopium* algal symbiont counts data and gene annotation
+Not possible yet, alignments to Cladocopium genome pending
 ```{r symbiont_countdata}
-# Import and tidy counts data
-countdata <- read.delim("./outputs/SymC1_counts/AxH_SymC1.counts", comment.char="#")
-## Tidy counts data
-#Set Gene ID's as row names
-row.names(countdata) <- countdata$Geneid
-# Remove first six columns (Geneid, chr, start, end, strand, length)
-countdata <- countdata[ ,7:ncol(countdata)]
-#countdata <- countdata[ ,6:ncol(countdata)]
-# Remove file prefixes and suffixes
-  colnames(countdata) <- gsub("X.", "", colnames(countdata))
-  colnames(countdata) <- gsub("scratch.projects.transcriptomics.mikeconnelly.projects.EAPSI_Symbiodinaceae.outputs.STARalign_SymC1.", "", colnames(countdata))
-  colnames(countdata) <- gsub("_SymC1Aligned.out.bam$", "", colnames(countdata))
-  colnames(countdata) <- gsub("_SymC1_[1-4]Aligned.out.bam$", "", colnames(countdata)) # removes extra suffixes from multiple rounds of alignment and quantification
-# Sort countdata by Cladocopium goreaui gene ID
-countdata_sorted_symbiont <- as.data.frame(countdata[order(rownames(countdata)),])
+# # Import and tidy counts data
+# countdata <- read.delim("./outputs/SymC1_counts/AxH_SymC1.counts", comment.char="#")
+# ## Tidy counts data
+# #Set Gene ID's as row names
+# row.names(countdata) <- countdata$Geneid
+# # Remove first six columns (Geneid, chr, start, end, strand, length)
+# countdata <- countdata[ ,7:ncol(countdata)]
+# #countdata <- countdata[ ,6:ncol(countdata)]
+# # Remove file prefixes and suffixes
+#   colnames(countdata) <- gsub("X.", "", colnames(countdata))
+#   colnames(countdata) <- gsub("scratch.projects.transcriptomics.mikeconnelly.projects.EAPSI_Symbiodinaceae.outputs.STARalign_SymC1.", "", colnames(countdata))
+#   colnames(countdata) <- gsub("_SymC1Aligned.out.bam$", "", colnames(countdata))
+#   colnames(countdata) <- gsub("_SymC1_[1-4]Aligned.out.bam$", "", colnames(countdata)) # removes extra suffixes from multiple rounds of alignment and quantification
+# # Sort countdata by Cladocopium goreaui gene ID
+# countdata_sorted_symbiont <- as.data.frame(countdata[order(rownames(countdata)),])
 ```
 ```{r symbiont_gene_annotation}
 gene_annotation_symbiont <- read.delim("./data/cladocopium_genome_annotations.tsv", header = T) %>% arrange(ID)
@@ -258,13 +240,8 @@ vsd_symbiont <- vst(dds_symbiont, blind = TRUE) # use blind = TRUE to not accoun
 vsd <- vsd_coral
 # vsd <- vsd_symbiont
 ```
-```{r pca_combined, echo=FALSE}
-pca_coral <- ggPCA(vsd_coral, samples, treatcolors, pclab = c(1,2))
-# pca_symbiont <- ggPCA(vsd_symbiont, samples, condcolors_AxH, pclab = c(1,2))
-pca_combined <- pca_coral + pca_symbiont
-# print(pca_combined)
-# ggsave(pca_coral, filename = "./outputs/DESeq_results/figures/pca_coral.pdf", width = 200, height = 100, units = "mm", device = "pdf")
-print(pca_coral)
+```{r}
+DESeq2::plotPCA(vsd_coral, intgroup = c("Symbiont_Genus")) 
 ```
 
 ### Principal Coordinate Analysis (PCoA)
@@ -311,14 +288,6 @@ pcoa_plot <- pcoa_treatment_coral
 pdf(file = "./outputs/DESeq_results/figures/pcoa_treatment.pdf", width = 6, height = 4)
 print(pcoa_plot)
 dev.off()
-```
-```{r pcoa_combined, echo=FALSE}
-pcoa_combined <- pcoa_treatment_coral + pcoa_treatment_symbiont
-pcoa_combined
-```
-```{r Figure_1}
-# Save Figure 1 output for two-column width figure (169 mm)
-ggsave(pcoa_combined, filename = "./manuscript_figures/Fig1A_PCoA_Treatment_Combined.pdf", width = 220, height = 90, units = "mm", device = "pdf")
 ```
 
 ## Differential gene expression analysis (DESeq2)
