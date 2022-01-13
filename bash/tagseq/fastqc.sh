@@ -21,4 +21,5 @@ module load java/1.8.0_60
 module load fastqc/0.10.1
 fastqc \
 ${prodir}/outputs/trimmed_reads/* \
+--threads 12 \
 --outdir ${prodir}/outputs/trimqcs/
