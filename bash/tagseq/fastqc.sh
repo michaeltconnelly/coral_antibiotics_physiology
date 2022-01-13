@@ -9,7 +9,7 @@
 #BSUB -P transcriptomics
 #BSUB -o fastqc%J.out
 #BSUB -e fastqc%J.err
-#BSUB -n 16
+#BSUB -n 12
 #BSUB -u mconnelly@rsmas.miami.edu
 #BSUB -N
 
@@ -20,5 +20,5 @@ prodir="/scratch/projects/transcriptomics/mikeconnelly/projects/anti_phys"
 module load java/1.8.0_60
 module load fastqc/0.10.1
 fastqc \
-${prodir}/scratch/projects/transcriptomics/mikeconnelly/projects/anti_phys/outputs/trimmed_reads \
+${prodir}/outputs/trimmed_reads \
 --outdir ${prodir}/outputs/trimqcs/
