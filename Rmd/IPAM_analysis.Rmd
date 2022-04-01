@@ -7,7 +7,7 @@ output: html_document
 ## Setup directories and packages
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir = "~/computing/projects/anti_phys")
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
 ```
 ```{r packages}
 library("tidyverse")
@@ -15,16 +15,26 @@ library("ggplot2")
 library("ggh4x") # devtools::install_github("teunbrand/ggh4x") 
 # library("ggpubr")
 # library("ggnewscale")
+library("grid")
+library("ggthemes")
+source("./R/ismej_theme.R")
 ```
 ```{r colors, include=FALSE}
 #rename to named colors
-treatcolors <- c("lightblue", "dodgerblue", "seagreen1")
+treatcolors <- c("grey", "dodgerblue", "firebrick1")
 #treatfills <- c()
 genotype_colors <- read_csv("data/genotype_colors.csv") # color names csv corresponding to excel sheet colors
 genocolors <- c(genotype_colors$color, "grey")
+# default ggplot fill
+gg_color_hue <- function(n) {
+  hues = seq(15, 375, length = n + 1)
+  hcl(h = hues, l = 65, c = 100)[1:n]
+}
+genocolors <- gg_color_hue(14)
+#
 ```
 ```{r theme}
-theme_set(theme_bw())
+theme_set(theme_ismej())
 ```
 ## Import sample metadata
 ```{r genotypes_fragments, include=FALSE}
@@ -241,19 +251,87 @@ YII_Treatment + facet_wrap(~ITS2) + ggtitle(title)
 # YII_Treatment + facet_wrap(~Genotype)
 # ggsave("./outputs/figures/ipam_progression_plot_its2_treatment.pdf", device = "pdf", height = 5, width = 11)
 ```
-```{r dissertation figure 4.2}
-ipam_plot <- ipam_fragments %>% ggplot(aes(DayF, mean_value, colour=Treatment, group=Treatment)) +
-  stat_summary(fun.data = "mean_se",geom = "errorbar", width = 0.2, position = position_dodge(0.1))+
-  stat_summary(fun.y=mean, geom="point", size = 2, alpha=0.8, position = position_dodge(0.1)) +
+### Figure 2A
+```{r figure 2A: powerpoint}
+pdf("./outputs/figures/ipam_progression_plot_mtorf_symbiont_no-bones.pdf", height = 5, width = 5.75)
+ipam_title <- expression(paste(italic("Pocillopora"), ' symbiont photochemical efficiency', sep = ""))
+# New facet label names
+mtorf_labs <- c("Type 1", "Type 3")
+names(mtorf_labs) <- c("Type_1", "Type_3")
+# make plot
+ipam_plot <- ipam_fragments %>%
+  ggplot(aes(DayF, mean_value, colour = Treatment, group = Treatment)) +
+  stat_summary(fun.data = "mean_se",geom = "errorbar", width = 0.3, position = position_dodge(0.1))+
+  stat_summary(fun.y=mean, geom="point", size = 2.5, alpha = 0.8, position = position_dodge(0.1)) +
   stat_summary(fun.y=mean, geom="line") +
       scale_color_manual(values = treatcolors[2:3]) +
       scale_y_continuous(breaks = seq(0.4, 0.7, 0.1),  
                          name=("Photochemical efficiency (Fv/Fm)")) +
       scale_x_discrete(name="Day") +
-    coord_cartesian(ylim=c(0.3, 0.7))
-
-ipam_plot + facet_nested(. ~ mtORF + Symbiont_Genus, scales = "free_x", space = "free", switch = NULL)
-ggsave("./outputs/figures/ipam_progression_plot_mtorf_symbiont.pdf", device = "pdf", height = 3.5, width = 6)
+    coord_cartesian(ylim=c(0.3, 0.7)) +
+  facet_nested(. ~ mtORF + Symbiont_Genus,
+               scales = "free_x", space = "free", switch = NULL,
+               labeller = labeller(mtORF = mtorf_labs)) +
+   theme(plot.title = element_text(size = 16),
+        strip.text = element_text(size = 10),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 10),
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12)) + 
+  ggtitle(ipam_title)
+# modify facet strip colors
+strip_colors <- c("darkorange1", rep("lightgrey", 2), "darkturquoise", rep("lightgrey", 2))
+  gt <- ggplotGrob(ipam_plot)
+  strip_both <- which(grepl('strip-', gt$layout$name))
+  k <- 1
+  for (i in strip_both) {
+    j <- which(grepl('rect', gt$grobs[[i]]$grobs[[1]]$childrenOrder))
+    gt$grobs[[i]]$grobs[[1]]$children[[j]]$gp$fill <- strip_colors[k]
+    k <- k+1
+  }
+  # # draw gtable object
+  gp <- grid.draw(gt)
+  print(gp)
+dev.off()
+```
+```{r figure 2A: manuscript}
+pdf("./outputs/figures/Fig2_ipam_progression_plot_mtorf_symbiont.pdf", height = 90/25.4, width = 175/25.4) # two-column max size
+# pdf("./outputs/figures/Fig2_ipam_progression_plot_mtorf_symbiont.pdf", height = 88/25.4, width = 88/25.4) # one-column max size
+ipam_title <- expression(paste(italic("Pocillopora"), ' symbiont photochemical efficiency', sep = ""))
+# New facet label names
+mtorf_labs <- c("Type 1", "Type 3")
+names(mtorf_labs) <- c("Type_1", "Type_3")
+# make plot
+ipam_plot <- ipam_fragments %>%
+  ggplot(aes(DayF, mean_value, color = Treatment, fill = Treatment, group = Treatment)) +
+  stat_summary(fun.data = "mean_se",geom = "errorbar", width = 0.2, position = position_dodge(0.1))+
+  stat_summary(fun.y = mean, geom ="point", shape = 21, size = 2, alpha = 1, stroke = 0.5, color = "black", position = position_dodge(0.1)) +
+  stat_summary(fun.y = mean, geom ="line") +
+      scale_color_manual(values = treatcolors[2:3]) +
+      scale_fill_manual(values = treatcolors[2:3]) +
+      scale_y_continuous(breaks = seq(0.4, 0.7, 0.1),  
+                         name=("Photochemical efficiency (Fv/Fm)")) +
+      scale_x_discrete(name="Day") +
+    coord_cartesian(ylim=c(0.3, 0.7)) +
+  facet_nested(. ~ mtORF + Symbiont_Genus,
+               scales = "free_x", space = "free", switch = NULL,
+               labeller = labeller(mtORF = mtorf_labs)) +
+  guides(color = guide_legend(override.aes = list(color = treatcolors[2:3], alpha = 1, stroke = 1))) + 
+  ggtitle(ipam_title)
+# modify facet strip colors
+strip_colors <- c("darkorange1", rep("lightgrey", 2), "darkturquoise", rep("lightgrey", 2))
+  gt <- ggplotGrob(ipam_plot)
+  strip_both <- which(grepl('strip-', gt$layout$name))
+  k <- 1
+  for (i in strip_both) {
+    j <- which(grepl('rect', gt$grobs[[i]]$grobs[[1]]$childrenOrder))
+    gt$grobs[[i]]$grobs[[1]]$children[[j]]$gp$fill <- strip_colors[k]
+    k <- k+1
+  }
+  # # draw gtable object
+  gp <- grid.draw(gt)
+  print(gp)
+dev.off()
 ```
 
 ## Statistical analysis
@@ -412,6 +490,20 @@ cld(emmeans(LM_3, specs = c("mtORF")))
 cld(emmeans(LM_3, specs = c("ITS2")))
 #write.csv(YIIAcerEmm, "YIIAcerEmm.csv")
 ```
+
+## Fv/Fm trait matrix for WGCNA correlation
+```{r}
+# start with day 5, but process sampling data to get as close to preservation time as possible for correlations to gene expression
+ipam_traits <- ipam_fragments %>% 
+  filter(Sample_ID %in% samples_wgcna) %>% 
+  filter(Day == "5") %>% 
+  dplyr::select(Genotype, Treatment, Fragment_ID, mean_value) %>%
+  dplyr::mutate("Sample" = str_c(Genotype, Treatment, Fragment_ID, sep = "_")) %>% 
+  dplyr::select(-Genotype, -Treatment, -Fragment_ID) 
+# 
+write_csv(ipam_traits, "./outputs/physio/ipam_wgcna_traits.csv")
+```
+
 ## Summary
 ```{r}
 sessionInfo()

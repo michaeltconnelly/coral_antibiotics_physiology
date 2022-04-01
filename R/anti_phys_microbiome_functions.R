@@ -1,41 +1,6 @@
-#anti_phys_functions.R
+#anti_phys_microbiome_functions.R
 #author: "Mike Connelly"
 #date: "02/17/2021"
-# Create ggplot2 theme for journal submission
-theme_mec <- function(base_size = 10, base_family = "Arial") {
-  (theme_foundation(base_size=base_size, base_family=base_family)
-   + theme(
-     plot.background = element_rect(colour = NA),
-     panel.background = element_blank(),
-     panel.grid.major = element_blank(), 
-     panel.grid.minor = element_blank(), 
-     panel.border = element_rect(color = "black", fill = NA),
-     plot.title = element_text(face = "plain", size = rel(1), hjust = 0),
-     plot.subtitle = element_text(face = "plain", size = rel(0.8)),
-     axis.title = element_text(face = "plain",size = rel(1)),
-     axis.title.x = element_text(vjust = -2),
-     axis.title.y = element_text(angle = 90, vjust = 2),
-     text = element_text(),
-     axis.text = element_text(size = rel(0.8)), 
-     axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5),
-     axis.text.y = element_text(), 
-     #axis.line = element_line(colour = "black"),
-     axis.ticks = element_line(),
-     legend.title = element_text(size = rel(1)),
-     legend.text = element_text(size = rel(0.8), margin = margin(t = 2, b = 2, unit = "mm")),
-     legend.key = element_rect(color = NA),
-     legend.background = element_rect(fill = NA, colour = NA),
-     legend.position = "right",
-     legend.direction = "vertical",
-     legend.spacing.x = unit(2, "mm"),
-     legend.spacing.y = unit(0, "mm"),
-     legend.key.size = unit(2, "mm"),
-     plot.margin = unit(c(2,2,2,2), "mm"),
-     strip.background = element_rect(color = "black", fill = "grey"),
-     strip.text = element_text(face = "plain")
-   ))
-}
-###
 
 # Pocillopora Antibiotics Physiology Analysis Functions ---------------------------------------------------------------------------------
 
