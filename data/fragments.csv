@@ -1,8 +1,8 @@
 Fragment_ID,Genotype,Treatment,Sampling_Time
-001,PAN-5,Baseline,Day 0
-002,PAN-5,Baseline,Day 0
-003,PAN-5,Baseline,Day 0
-004,PAN-5,Baseline,Day 0
+001,PAN-05,Baseline,Day 0
+002,PAN-05,Baseline,Day 0
+003,PAN-05,Baseline,Day 0
+004,PAN-05,Baseline,Day 0
 005,PAN-10,Baseline,Day 0
 006,PAN-10,Baseline,Day 0
 007,PAN-10,Baseline,Day 0
@@ -55,10 +55,10 @@ Fragment_ID,Genotype,Treatment,Sampling_Time
 054,PAN-83,Baseline,Day 0
 055,PAN-83,Baseline,Day 0
 056,PAN-83,Baseline,Day 0
-057,PAN-5,Control,Day 7
-058,PAN-5,Control,Day 7
-059,PAN-5,Control,Day 7
-060,PAN-5,Control,Day 7
+057,PAN-05,Control,Day 7
+058,PAN-05,Control,Day 7
+059,PAN-05,Control,Day 7
+060,PAN-05,Control,Day 7
 061,PAN-10,Control,Day 7
 062,PAN-10,Control,Day 7
 063,PAN-10,Control,Day 7
@@ -111,10 +111,10 @@ Fragment_ID,Genotype,Treatment,Sampling_Time
 110,PAN-83,Control,Day 7
 111,PAN-83,Control,Day 7
 112,PAN-83,Control,Day 7
-113,PAN-5,Antibiotics,Day 7
-114,PAN-5,Antibiotics,Day 7
-115,PAN-5,Antibiotics,Day 7
-116,PAN-5,Antibiotics,Day 7
+113,PAN-05,Antibiotics,Day 7
+114,PAN-05,Antibiotics,Day 7
+115,PAN-05,Antibiotics,Day 7
+116,PAN-05,Antibiotics,Day 7
 117,PAN-10,Antibiotics,Day 7
 118,PAN-10,Antibiotics,Day 7
 119,PAN-10,Antibiotics,Day 7

@@ -111,12 +111,36 @@ pdf(file="./outputs/figures/mtORF_haplotypes_type.pdf", width = 4, height = 5, p
 plot(dataNet,
      size = attr(dataNet, "freq"),
      pie = Type,
-     # bg = c("orange","blue"),
+     bg = c("firebrick1","turquoise2"),
      show.mutation = 1,
      labels = TRUE,
      legend = c(-3,18))
 dev.off()
 ```
+### Figure 1B
+```{r figure 1B: powerpoint}
+pdf(file="./outputs/figures/mtORF_haplotypes_type_nobones.pdf", width = 3, height = 4, pointsize = 6)
+plot(dataNet,
+     size = attr(dataNet, "freq"),
+     pie = Type,
+     bg = c("darkorange1","turquoise2"),
+     show.mutation = 1,
+     labels = FALSE,
+     legend = FALSE)
+dev.off()
+```
+```{r figure 1B: manuscript}
+pdf(file="./outputs/figures/Fig1B_mtORF_haplotypes_type.pdf", height = 90/25.4, width = 75/25.4, pointsize = 6) # two-column max size
+plot(dataNet,
+     size = attr(dataNet, "freq"),
+     pie = Type,
+     bg = c("darkorange1","turquoise2"),
+     show.mutation = 1,
+     labels = FALSE,
+     legend = FALSE)
+dev.off()
+```
+
 ## Pocillopora corals from previous studies
 ```{r mtORF sequences}
 mtorf_sequences <- read_csv("./data/mtorf/mtorf_sequences.csv")
