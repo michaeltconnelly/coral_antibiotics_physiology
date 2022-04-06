@@ -1,14 +1,14 @@
 #!/bin/bash
-#./bash/tagseq/unique_featurecounts.sh
+#./bash/tagseq/unique_featurecounts_symC1.sh
 #purpose: mark duplicate reads and quantify STAR-aligned BAM files at the gene level using featureCounts
 #To start this job from the anti_phys directory, use:
-#bsub -P transcriptomics < ./bash/tagseq/unique_featurecounts.sh
+#bsub -P transcriptomics < ./bash/tagseq/unique_featurecounts_symC1.sh
 
-#BSUB -J feat
+#BSUB -J unique_featurecounts_symC1
 #BSUB -q general
 #BSUB -P transcriptomics
-#BSUB -o unique_featurecounts%J.out
-#BSUB -e unique_featurecounts%J.err
+#BSUB -o unique_featurecounts_symC1%J.out
+#BSUB -e unique_featurecounts_symC1%J.err
 #BSUB -n 8
 #BSUB -u mconnelly@rsmas.miami.edu
 #BSUB -N
@@ -31,6 +31,6 @@ module load subread
 
 featureCounts -p -T 8 -t gene \
 -g ID \
--a ${mcs}/sequences/genomes/coral/pocillopora/pdam_genome.gff \
--o ${prodir}/outputs/STARcounts_Pdam/PocAnti_Pdam.counts \
+-a ${mcs}/sequences/genomes/symbiodinium/symC1_genome.gff \
+-o ${prodir}/outputs/STARcounts_SymC1/PocAnti_SymC1.counts \
 ${prodir}/outputs/STARalign_Pdam/*uniq.bam
