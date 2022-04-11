@@ -4,11 +4,11 @@
 #To start this job from the anti_phys directory, use:
 #bsub -P transcriptomics < ./bash/tagseq/staralignwrapper_symbio.sh
 
-#BSUB -J staralignwrapper_symD
+#BSUB -J staralignwrapper_symbio
 #BSUB -q general
 #BSUB -P transcriptomics
-#BSUB -o staralignwrapper_symD%J.out
-#BSUB -e staralignwrapper_symD%J.err
+#BSUB -o staralignwrapper_symbio%J.out
+#BSUB -e staralignwrapper_symbio%J.err
 #BSUB -n 8
 #BSUB -u mconnelly@rsmas.miami.edu
 #BSUB -N
@@ -62,7 +62,7 @@ echo ${mcs}/programs/STAR-2.5.3a/bin/Linux_x86_64/STAR \
 --outStd Log BAM_Unsorted BAM_Quant \
 --outSAMtype BAM Unsorted SortedByCoordinate \
 --outReadsUnmapped Fastx \
---outFileNamePrefix ${prodir}/outputs/STARalign_SymD/${sample}_SymD >> "${prodir}"/bash/jobs/"${sample}"_staralign_symbio.job
+--outFileNamePrefix ${prodir}/outputs/STARalign_Symbio/${sample}_Symbio >> "${prodir}"/bash/jobs/"${sample}"_staralign_symbio.job
 
 #lets me know file is done
 echo 'echo' "STAR alignment of $sample complete" >> "${prodir}"/bash/jobs/"${EAPSIsample}"_staralign_symbio.job
