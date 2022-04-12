@@ -31,7 +31,7 @@ echo "Aligning ${sample}"
 #   input BSUB commands
 echo '#!/bin/bash' > "${prodir}"/bash/jobs/"${sample}"_staralign_symbio.job
 echo '#BSUB -q bigmem' >> "${prodir}"/bash/jobs/"${sample}"_staralign_symbio.job
-echo '#BSUB -J '"${sample}"_staralign_symD'' >> "${prodir}"/bash/jobs/"${sample}"_staralign_symbio.job
+echo '#BSUB -J '"${sample}"_staralign_symbio'' >> "${prodir}"/bash/jobs/"${sample}"_staralign_symbio.job
 echo '#BSUB -o '"${prodir}"/outputs/logfiles/"$sample"staralign_symbio%J.out'' >> "${prodir}"/bash/jobs/"${sample}"_staralign_symbio.job
 echo '#BSUB -e '"${prodir}"/outputs/errorfiles/"$sample"staralign_symbio%J.err'' >> "${prodir}"/bash/jobs/"${sample}"_staralign_symbio.job
 echo '#BSUB -n 8' >> "${prodir}"/bash/jobs/"${sample}"_staralign_symbio.job
@@ -65,7 +65,7 @@ echo ${mcs}/programs/STAR-2.5.3a/bin/Linux_x86_64/STAR \
 --outFileNamePrefix ${prodir}/outputs/STARalign_Symbio/${sample}_Symbio >> "${prodir}"/bash/jobs/"${sample}"_staralign_symbio.job
 
 #lets me know file is done
-echo 'echo' "STAR alignment of $sample complete" >> "${prodir}"/bash/jobs/"${EAPSIsample}"_staralign_symbio.job
+echo 'echo' "STAR alignment of $sample complete" >> "${prodir}"/bash/jobs/"${sample}"_staralign_symbio.job
 echo "STAR alignment script of $sample submitted"
 #   submit generated trimming script to job queue
 bsub < "${prodir}"/bash/jobs/"${sample}"_staralign_symbio.job
