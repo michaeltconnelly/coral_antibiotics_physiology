@@ -25,8 +25,9 @@ module load subread
 
 for sample in $samples ; do
 samtools index ${prodir}/outputs/STARalign_Symbio/${sample}_SymbioAligned.sortedByCoord.out.bam
-samtools view -q 255 -Sub ${prodir}/outputs/STARalign_Symbio/${sample}_PdamAligned.sortedByCoord.out.bam \
--o ${prodir}/outputs/STARalign_Symbio/${sample}_Aligned.sortedByCoord.out.uniq.bam
+samtools view -q 255 -Sub ${prodir}/outputs/STARalign_Symbio/${sample}_SymbioAligned.sortedByCoord.out.bam \
+-o ${prodir}/outputs/STARalign_Symbio/${sample}_SymbioAligned.sortedByCoord.out.uniq.bam
+echo "${sample} processed with samtools index, view"
 done
 
 featureCounts -p -T 8 -t gene \
