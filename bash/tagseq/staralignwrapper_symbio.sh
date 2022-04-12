@@ -36,6 +36,8 @@ echo '#BSUB -o '"${prodir}"/outputs/logfiles/"$sample"staralign_symbio%J.out'' >
 echo '#BSUB -e '"${prodir}"/outputs/errorfiles/"$sample"staralign_symbio%J.err'' >> "${prodir}"/bash/jobs/"${sample}"_staralign_symbio.job
 echo '#BSUB -n 8' >> "${prodir}"/bash/jobs/"${sample}"_staralign_symbio.job
 echo '#BSUB -W 4:00' >> "${prodir}"/bash/jobs/"${sample}"_staralign_symbio.job
+echo '#BSUB -u mconnelly@rsmas.miami.edu' >> "${prodir}"/bash/jobs/"${sample}"_staralign_symbio.job
+echo '#BSUB -N' >> "${prodir}"/bash/jobs/"${sample}"_staralign_symbio.job
 
 #   input command to run STAR aligner
 echo ${mcs}/programs/STAR-2.5.3a/bin/Linux_x86_64/STAR \
