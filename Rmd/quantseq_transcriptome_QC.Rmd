@@ -75,11 +75,11 @@ sample_metadata$mtORF <- factor(sample_metadata$mtORF, levels = mtorf_levels, or
 sample_metadata$ITS2 <- factor(sample_metadata$ITS2, levels = sym_levels, ordered = TRUE)
 sample_metadata$Symbiont_Genus <- ifelse(sample_metadata$ITS2 == "D1", "Durusdinium", "Cladocopium")
 # Create analysis-compatible sample map
-samples <- sample_metadata %>%
+samples_success <- sample_metadata %>%
   dplyr::filter(Sequencing_Success == T)
 ```
 ```{r analysis_samples}
-samples_analysis <- samples %>% 
+samples_analysis <- samples_success %>% 
   dplyr::filter(Include_Analysis == T, Treatment != "Baseline")
 # 
 samples_analysis$Sample_ID
@@ -110,9 +110,9 @@ QC_summary <- QC_summary %>%
   dplyr::select(-`multimapped`, -`unmapped`) %>% 
   pivot_longer(., `Raw Reads`:`Assigned Reads`, names_to = "pipeline_step", values_to = "read_count") %>%
   left_join(., genotypes, by = "Genotype")
-# QC_summary$Treatment <- factor(QC_summary$Treatment, levels = c("control", "Heat", "Antibiotics", "Antibiotics.Heat"), ordered = TRUE)
-#
+# 
 QC_summary$pipeline_step <- factor(QC_summary$pipeline_step, levels = c("Raw Reads", "Trimmed Reads", "Uniquely Mapped Reads", "Input Reads", "Assigned Reads"), ordered = TRUE)
+QC_summary$Treatment <- factor(QC_summary$Treatment, levels = treatment_levels, ordered = TRUE)
 ```
 
 ## Vizualize raw read depth distribution
@@ -182,7 +182,7 @@ pipeQC_counts <- QC_summary %>%
   scale_color_manual(values = genocolors) +
   # scale_shape_manual(values = colshapes) + 
   scale_fill_manual(values = genocolors) +
-  theme(axis.text.x = element_text(angle = 315, hjust = 0),
+  theme(axis.text.x = element_text(angle = 270, hjust = 0),
         axis.title.x = element_blank()
         # panel.grid.major = element_line(color = "grey92"),
         ) +
@@ -196,7 +196,7 @@ pipeQC_counts
 ```{r proportions}
 QC_summary <- QC_summary %>% 
   dplyr::group_by(Sample_ID) %>%
-  mutate(proportion = read_count / read_count[pipeline_step == "Raw Reads"])
+  dplyr::mutate(proportion = read_count / read_count[pipeline_step == "Raw Reads"])
 ```
 ```{r read_proportions_all}
 # All sequenced samples
@@ -228,6 +228,8 @@ pipeQC_props
 # pdf("./outputs/figures/transcriptome_QC_proportions.pdf")
 pipeQC_props <- QC_summary %>%
   filter(Sample_ID %in% samples_analysis$Sample_ID) %>% 
+  dplyr::group_by(Sample_ID) %>%
+  dplyr::mutate(proportion = read_count / read_count[pipeline_step == "Raw Reads"]) %>% 
   ggplot(aes(pipeline_step, proportion, color = Genotype, fill = Genotype)) +
   geom_path(aes(group = Sample_ID), show.legend = TRUE) +
   geom_point(size = 2, shape = 21, color = "black", alpha = 0.5, stroke = 0.5, show.legend = TRUE) + 
@@ -236,7 +238,7 @@ pipeQC_props <- QC_summary %>%
   scale_color_manual(values = genocolors) +
   # scale_shape_manual(values = colshapes) + 
   scale_fill_manual(values = genocolors) +
-  theme(axis.text.x = element_text(angle = 315, hjust = 0), 
+  theme(axis.text.x = element_text(angle = 270, hjust = 0), 
         # panel.grid.major = element_line(color = "grey92")
         legend.position = "right",
         legend.direction = "vertical") +
@@ -252,8 +254,8 @@ pipeQC_props
 
 ### Supplementary Figure 8
 ```{r}
-pdf("./outputs/figures/FigS8_readcounts.pdf", height = 6, width = 6.5)
-qcfig <- (pipeQC_counts / pipeQC_props & theme(legend.position = "right", legend.margin = margin(2,2,2,10, unit = "mm"))) + plot_annotation(tag_levels = "A") + plot_layout(guides = "collect") 
+pdf("./outputs/figures/FigS8_readcounts.pdf", width = 6.5, height = 7.5)
+qcfig <- (pipeQC_counts / pipeQC_props & theme(legend.position = "right", legend.margin = margin(2,2,2,10, unit = "mm"))) + plot_layout(guides = "collect") 
 # ggsave(qcfig, filename = "./outputs/figures/FigS8_readcounts.pdf", width = 6.5, height = 5, units = "in", device = "pdf")
 print(qcfig)
 dev.off()
@@ -279,5 +281,23 @@ aov.haplotype <- aov(proportion ~ haplotype, data = STAR_QC)
 summary(aov.haplotype)
 aov.Sequencing_Round <- aov(proportion ~ Sequencing_Round, data = STAR_QC)
 summary(aov.Sequencing_Round)
+```
+
+## Symbiont type alignment rates
+```{r}
+sym_qcs <- read_csv("./data/SymQCs_040722.csv")
+```
+```{r}
+sym_qc_meta <- sym_qcs %>%
+  pivot_longer(., cols = c(Cladocopium, Durusdinium), names_to = "symbiont", values_to = "percent") %>%
+  left_join(sample_metadata)
+
+pdf("./outputs/figures/sym_proportion_aligned.pdf", width = 11, height = 4.5)
+sym_qc_meta %>% 
+  ggplot(aes(Sample_ID, percent)) + geom_col(aes(fill = symbiont)) + 
+  facet_grid(~ Genotype, scales = "free", space = "free") +
+  theme(axis.text.x = element_text(angle = 270, hjust = 0)) +
+  scale_fill_manual(values = c("dodgerblue1", "tomato1"))
+  dev.off()
 ```
 

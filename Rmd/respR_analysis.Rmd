@@ -271,15 +271,24 @@ print(raw_data_plot_mass)
 ```
 ### Supplementary Figure 2
 ```{r supplementary figure 2}
+pdf("./outputs/figures/FigS2_O2_consumption_raw.pdf", width = 6.5, height = 5)
+# 
+raw_resp_title <- expression(paste(italic("Pocillopora"), " microfragment oxygen consumption raw values", collapse = ""))
+yaxis_title <- expression('%'~O[2]~saturation)
 # plot all plates colored by treatment
 raw_data_plot_treatment <- resp_all_df_tidy_meta %>% 
   filter(`Time/Min.`> 15 & `Time/Min.` < 45) %>% 
-  filter(!is.na(Treatment)) %>% 
+  filter(!is.na(Treatment)) %>%
   ggplot(aes(x = `Time/Min.`, y = pct_oxygen)) +
   geom_point(aes(color = Treatment), size = 0.05) +
-  scale_color_manual(values = c(treatcolors[3], treatcolors[2], "darkgrey")) +
-  facet_grid(plate ~ day, switch = "y")
+  scale_color_manual(values = c(treatcolors[3], treatcolors[2], "darkgrey"),
+                     guide = guide_legend(override.aes = list(size = 3))) +
+  facet_grid(day ~ plate, switch = "y") +
+  scale_y_continuous(limits = c(-20,120), breaks = seq(0,100, 25), name = yaxis_title, position = "right") +
+  ggtitle(raw_resp_title)
 print(raw_data_plot_treatment)
+# 
+dev.off()
 ```
 
 
@@ -483,14 +492,22 @@ ggsave("./outputs/physio/respR/figures/samples_inspect_boxplots.pdf")
 ```
 ### Supplementary Figure 3
 ```{r}
+pdf("./outputs/figures/FigS3_O2_background.pdf", width = 6.5, height = 3.5)
+bg_title <- expression(paste(italic("Pocillopora"), " microfragment and background oxygen consumption rates", collapse = ""))
+yaxis_title <- expression(raw~O[2]~consumption~rate~(mu*mol~O[2]~min^-1))
 # Vizualize plate background rates along with fragment rate distribution
   ggplot(data = plate_bg_rates, aes(Plate, mean_bg_rate)) +
-  geom_boxplot(data = rates_frame_samples, aes(Plate, rate)) +
+  geom_boxplot(data = rates_frame_samples, aes(Plate, rate), color = "darkgrey", outlier.shape = NA) +
+  geom_jitter(data = rates_frame_samples, aes(Plate, rate), size = 0.2, width = 0.15) +
   geom_point(data = plate_bg_rates,
-             aes(Plate, mean_bg_rate), color = "red", size = 0.1) +
+             aes(Plate, mean_bg_rate), color = "red", size = 0.2) +
   geom_errorbar(data = plate_bg_rates,
-                aes(ymin = mean_bg_rate-se_bg_rate, ymax = mean_bg_rate+se_bg_rate), width = 0.1, color = "red") +
-  facet_grid(~ Day)
+                aes(ymin = mean_bg_rate-se_bg_rate, ymax = mean_bg_rate+se_bg_rate), width = 0.15, color = "red") +
+  facet_grid(~ Day) +
+        scale_y_continuous(name = yaxis_title) +
+    ggtitle(bg_title)
+  # 
+dev.off()
 ```
 
 ```{r daily_raw_rates_genotype}
@@ -578,6 +595,12 @@ rates_frame_samples %>%
 ```
 ### Supplementary Figure 4
 ```{r}
+pdf("./outputs/figures/FigS4_O2_mass_normalization.pdf", width = 6.5, height = 3.5)
+# 
+mass_norm_title <- expression(paste("Mass normalization of ", italic("Pocillopora"), " microfragment oxygen consumption rates", collapse = ""))
+xaxis_log_title <- "log10(Mass)"
+yaxis_log_title <- expression(log10(raw~O[2]~consumption~rate~(mu*mol~O[2]~min^-1)))
+# 
 rates_frame_samples %>% 
   dplyr::group_by(Fragment_ID) %>% 
   dplyr::mutate(mean_lograte = mean(log10(rate)),
@@ -588,14 +611,17 @@ rates_frame_samples %>%
   geom_errorbar(aes(ymin=mean_lograte-se_lograte,
                     ymax=mean_lograte+se_lograte,
                     color = Treatment), width = 0.01) +
-  geom_point(aes(fill  = mtORF), shape = 21) +
+  geom_point(aes(fill  = Treatment), alpha = 0.8, shape = 21) +
     # facet_grid(mtORF~Treatment) +
   # xlim(c(-1.4, -0.3)) +
   # ylim(c(-3.5, -2.5)) +
   scale_color_manual(values = treatcolors[2:3]) +
-  scale_fill_manual(values = c("darkorange1", "darkturquoise")) # + 
+  scale_fill_manual(values = treatcolors[2:3])  + 
+  scale_x_continuous() +
+  scale_y_continuous(name = yaxis_log_title) +
+  ggtitle(mass_norm_title)
+dev.off()
 ```
-
 
 ```{r visualize wam residuals}
 rates_frame_samples %>% 
@@ -616,27 +642,26 @@ rates_frame_samples %>%
   facet_grid(~Treatment)
 # ggsave("./outputs/figures/logM_logRate_regression-model_residuals.pdf", device = "pdf", height = 5, width = 10)
 ```
-plot error bars within each genotype
 
 How do I normalize the rates for each individual microfragment based on the model residuals? 
-
+--> use the model residuals as the mass-corrected rates (units do not carry over)
 ```{r rate_mass_normalization}
 # Allometric scaling of metabolic rate
 # MR = aM^b
-# model-adjusted scaling coefficient (b) = 0.493
+# model-adjusted scaling coefficient (b) = 0.6068693
 # scale mass to median fragment mass (M) = 0.140035 g
 # rates_frame_auto_meta$mean_mass <- mean(rates_frame_auto_meta$Mass, na.rm = TRUE)
 
 rates_frame_samples <- rates_frame_samples %>%
   mutate(mass_ratio = abs(Mass/0.140035), # rates scaled to median fragment mass
          rate_norm = (rate / Mass),
-         rate_norm_res = (rate * mass_ratio))
+         rate_norm_res = (rate * mass_ratio)^wam_model$coefficients[2])
 # Rate normalization by fragment mass
 # beta assumed 1
-# https://storage.googleapis.com/plos-corpus-prod/10.1371/journal.pone.0130303/1/pone.0130303.s002.pdf?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=wombat-sa%40plos-prod.iam.gserviceaccount.com%2F20210422%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20210422T183331Z&X-Goog-Expires=3600&X-Goog-SignedHeaders=host&X-Goog-Signature=6d2d68c083dc9b73c937b4168b221abb08b4ef72ed15330629e16d684168b9425f8c298ccea6618e66c9a920087097f07cdfd6d73055912671e5a5d7dae152053785c46604f23a3ed33bb8caaa5341254865633952449256c1cba3a0c6a5bd8ff4740ca8d3aef2d121da9af8c3a12b6b8998f173a9d1525ad837d24ced26a6348a1b22df6823d85bf8b7ff85bb62f8d20a8c01a109e97d1fe65aade12418455b89aa5ab6a90f1ae648f9abeb85cfe837d77b21a794af742359d1b70a316cf548fa1fe0d6dfad3356bfdd4572ddb4d53cac6e1dcdcb4a4636375e5d16ddf3b0b68067bfd4dca4b4abf85710a5a19386516f873567c2894554077a9be8dc501ce1
+# 
 rates_frame_samples %>% 
-  summarise(mean_rate = mean(rate),
-            se_rate = se(rate))
+  summarise(mean_rate = mean(rate*1000),
+            sd_rate = sd(rate))
 ```
 If M = aWb
 Then
@@ -700,6 +725,7 @@ Resp_Genotype <- ggplot(rates_frame_samples, aes (Meas_Day, rate_norm_res, color
   stat_summary(fun=mean, geom = "line") +
   scale_color_manual(values = genocolors)
 
+Resp_Genotype + facet_grid(Symbiont_Genus~Treatment)
 Resp_Genotype + facet_grid(ITS2~Treatment)
 Resp_Genotype + facet_grid(mtORF~Treatment)
 Resp_Genotype + facet_grid(Location~Treatment)
@@ -748,7 +774,7 @@ Resp_Treatment + facet_wrap(~ITS2)
 ```{r figure 2B: powerpoint}
 pdf("./outputs/figures/resp_progression_plot_mtorf_symbiont_no-bones.pdf", height = 5, width = 5.75)
 resp_title <- expression(paste(italic("Pocillopora"), " oxygen consumption rates", collapse = ""))
-yaxis_title <- expression(O[2]~consumption~rate~(mu*g~O[2]~mg^-1~min^-1))
+yaxis_title <- expression(O[2]~consumption~rate~residuals)
 # New facet label names
 mtorf_labs <- c("Type 1", "Type 3")
 names(mtorf_labs) <- c("Type_1", "Type_3")
@@ -761,7 +787,7 @@ resp_plot <- ggplot(rates_frame_samples, aes(Day, rate*1000, color = Treatment, 
   stat_summary(fun.y=mean, geom="line") + 
       scale_color_manual(values = treatcolors[2:3]) +
       scale_y_continuous(name = yaxis_title) +
-  coord_cartesian(ylim=c(0, 3)) +
+  # coord_cartesian(ylim=c(0, 3)) +
     facet_nested(. ~ mtORF + Symbiont_Genus,
                scales = "free_x", space = "free", switch = NULL,
                labeller = labeller(mtORF = mtorf_labs, Symbiont_Genus = sym_labs)) +
@@ -788,23 +814,23 @@ strip_colors <- c("darkorange1", rep("lightgrey", 2), "darkturquoise", rep("ligh
 dev.off()
 ```
 ```{r figure 2B: manuscript}
-pdf("./outputs/figures/Fig3_resp_progression_plot_mtorf_symbiont.pdf", height = 90/25.4, width = 175/25.4) # two-column max size
+pdf("./outputs/figures/Fig2B_resp_progression_plot_mtorf_symbiont.pdf", height = 90/25.4, width = 175/25.4) # two-column max size
 resp_title <- expression(paste(italic("Pocillopora"), " mass-corrected oxygen consumption rates", collapse = ""))
-yaxis_title <- expression(O[2]~consumption~rate~(mu*g~O[2]~mg^-1~min^-1))
+yaxis_title <- expression(Oxygen~consumption~rate~residuals)
 # New facet label names
 mtorf_labs <- c("Type 1", "Type 3")
 names(mtorf_labs) <- c("Type_1", "Type_3")
 sym_labs <- c(expression(italic(Cladocopium)), expression(italic(Durusdinium)))
 names(sym_labs) <- c("Cladocopium", "Durusdinium")
 # Treatment 
-resp_plot <- ggplot(rates_frame_samples, aes(Day, rate*1000, color = Treatment, fill = Treatment, group = Treatment)) +
+resp_plot <- ggplot(rates_frame_samples, aes(Day, rate_mass_residual, color = Treatment, fill = Treatment, group = Treatment)) +
   stat_summary(fun.data = "mean_se", geom = "errorbar", width = 0.2, position = position_dodge(0.1))+
   stat_summary(fun.y=mean, geom="point", shape = 21, size = 2, alpha = 1, stroke = 0.5, color = "black", position = position_dodge(0.1)) +
   stat_summary(fun.y=mean, geom="line") + 
       scale_color_manual(values = treatcolors[2:3]) +
       scale_fill_manual(values = treatcolors[2:3]) +
-      scale_y_continuous(name = yaxis_title) +
-  coord_cartesian(ylim=c(0, 3)) +
+      scale_y_continuous(name = yaxis_title, breaks = seq(-0.5, 0.5, 0.1)) +
+  coord_cartesian(ylim=c(-0.5, 0.5)) +
     facet_nested(. ~ mtORF + Symbiont_Genus,
                scales = "free_x", space = "free", switch = NULL,
                labeller = labeller(mtORF = mtorf_labs, Symbiont_Genus = sym_labs)) +
@@ -1032,9 +1058,9 @@ respR_lme_1 <- lmer(rate_mass_residual ~ Treatment * DayF +
                              (1|mtORF) + (1|Symbiont_Genus), REML=TRUE, data = rates_frame_samples)
 summary(respR_lme_1)
 #
-anova(respR_lme_1) # Significant fixed effect of treatment on model residuals
+anova(respR_lme_1) # Significant fixed effect of treatment on model residualsx
 #
-ranova(respR_lme_1) # Significant random effect of ITS2 type, no random effect of mtORF type
+ranova(respR_lme_1) # Significant random effect of symbiont type, no random effect of mtORF type
 #
 step(respR_lme_1)
 ```
@@ -1048,7 +1074,7 @@ plot(Effect(c("Treatment", "DayF"), respR_lme_1), x.var="DayF",
 #### Model #2: Treatment x Day, random Genotype effect
 ```{r treatment model residuals, random genotype}
 # Treatment effect model, genotype random effects
-respR_lme_2 <- lmer(rate_mass_residual ~ Treatment * DayF + 
+respR_lme_2 <- lmer(rate_norm*1000 ~ Treatment * DayF + 
                              (1|Genotype), REML=TRUE, data= rates_frame_samples)
 summary(respR_lme_2)
 #

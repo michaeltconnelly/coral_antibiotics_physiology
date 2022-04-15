@@ -17,6 +17,14 @@ library("ggh4x") # devtools::install_github("teunbrand/ggh4x")
 # library("ggnewscale")
 library("grid")
 library("ggthemes")
+#
+library("lme4")
+library("multcomp")
+library("multcompView")
+library("emmeans")
+library("effects")
+library("lmerTest")
+# 
 source("./R/ismej_theme.R")
 ```
 ```{r colors, include=FALSE}
@@ -229,6 +237,7 @@ YII_Genotype <- ggplot(ipam_fragments, aes(DayF, mean_value, color = Genotype, g
   stat_summary(fun.y=mean, geom = "line") +
   scale_color_manual(values = genocolors) 
 
+YII_Genotype + ylim(0.25, 0.7) + facet_grid(Symbiont_Genus~Treatment)
 YII_Genotype + ylim(0.25, 0.7) + facet_grid(ITS2~Treatment)
 YII_Genotype + ylim(0.25, 0.7) + facet_grid(mtORF~Treatment)
 YII_Genotype + ylim(0.25, 0.7) + facet_grid(Location~Treatment)
@@ -247,7 +256,7 @@ YII_Treatment <- ggplot(ipam_fragments, aes(DayF, mean_value, colour=Treatment, 
 # YII_Treatment
 # YII_Treatment + facet_wrap(~mtORF)
 title <- expression(paste(italic("Pocillopora"), " Symbiodinaceae Fv/Fm values during experiment", collapse = ""))
-YII_Treatment + facet_wrap(~ITS2) + ggtitle(title)
+YII_Treatment + facet_wrap(~Symbiont_Genus) + ggtitle(title)
 # YII_Treatment + facet_wrap(~Genotype)
 # ggsave("./outputs/figures/ipam_progression_plot_its2_treatment.pdf", device = "pdf", height = 5, width = 11)
 ```
@@ -265,7 +274,7 @@ ipam_plot <- ipam_fragments %>%
   stat_summary(fun.y=mean, geom="point", size = 2.5, alpha = 0.8, position = position_dodge(0.1)) +
   stat_summary(fun.y=mean, geom="line") +
       scale_color_manual(values = treatcolors[2:3]) +
-      scale_y_continuous(breaks = seq(0.4, 0.7, 0.1),  
+      scale_y_continuous(breaks = seq(0.3, 0.7, 0.1),  
                          name=("Photochemical efficiency (Fv/Fm)")) +
       scale_x_discrete(name="Day") +
     coord_cartesian(ylim=c(0.3, 0.7)) +
@@ -309,7 +318,7 @@ ipam_plot <- ipam_fragments %>%
   stat_summary(fun.y = mean, geom ="line") +
       scale_color_manual(values = treatcolors[2:3]) +
       scale_fill_manual(values = treatcolors[2:3]) +
-      scale_y_continuous(breaks = seq(0.4, 0.7, 0.1),  
+      scale_y_continuous(breaks = seq(0.3, 0.7, 0.1),  
                          name=("Photochemical efficiency (Fv/Fm)")) +
       scale_x_discrete(name="Day") +
     coord_cartesian(ylim=c(0.3, 0.7)) +
@@ -422,16 +431,11 @@ summary(m1)
 ### Linear mixed-effect models
 ```{r lme libraries, include = FALSE}
 # Libraries 
-  library("lme4")
-  library("multcomp")
-  library("multcompView")
-  library("emmeans")
-  library("effects")
-  library("lmerTest")
+# 
 #https://ourcodingclub.github.io/tutorials/mixed-models/
 #https://stats.stackexchange.com/questions/4700/what-is-the-difference-between-fixed-effect-random-effect-and-mixed-effect-mode
 ```
-#### Model #1: Treatment x Day, random ITS2, mtORF effects
+#### Model #1: Treatment x Day, random mtORF, sybmiont type effects
 ```{r lme model 1}
 # If you use day as a factor:
 # * mtORF and ITS2 considered random effects
@@ -446,7 +450,7 @@ ranova(ipam_lme_1)
 #
 step(ipam_lme_1)
 # Fv/Fm is significantly different between days, no significant treatment fixed effect
-# Significant mtORF and ITS2 random effects  
+# Significant random effects of mtORF type and symbiont type
 ```
 ```{r lme_1 effect plot}
 # pdf("./outputs/figures/ipam/ipam_treatment_effect.pdf", width = 8, height = 6)
@@ -473,22 +477,6 @@ plot(Effect(c("Treatment","DayF"), ipam_lme_2), x.var="DayF",
      multiline = T, ci.style="bars", colors = treatcolors[2:3])
 # Clear that there is no treatment effect after controlling for other random factors
 # dev.off()
-```
-#### Model #3
-```{r lme model 3: }
-ipam_lme_3 <- lmer(mean_value ~ ITS2 + mtORF + (1|Treatment), REML=TRUE,  data= ipam_fragments)
-
-anova(ipam_lme_3)
-#
-ranova(ipam_lme_3)
-#
-step(ipam_lme_3)
-```
-```{r}
-#  Pair-wise comparisons
-cld(emmeans(LM_3, specs = c("mtORF")))
-cld(emmeans(LM_3, specs = c("ITS2")))
-#write.csv(YIIAcerEmm, "YIIAcerEmm.csv")
 ```
 
 ## Fv/Fm trait matrix for WGCNA correlation

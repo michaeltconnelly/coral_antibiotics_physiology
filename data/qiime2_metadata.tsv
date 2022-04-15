@@ -1,187 +1,187 @@
-#SampleID	Genotype	Treatment	Sampling_Time	Location	Gulf	mtORF	ITS2	Seq_Control	Neg_Control
-PAN-10_Antibiotics_117	PAN-10	Antibiotics	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-10_Antibiotics_118	PAN-10	Antibiotics	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-10_Antibiotics_119	PAN-10	Antibiotics	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-10_Antibiotics_120	PAN-10	Antibiotics	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-32_Antibiotics_121	PAN-32	Antibiotics	Day 7	Uva	Chiriqui	Type_1	C1bc	FALSE	FALSE
-PAN-32_Antibiotics_122	PAN-32	Antibiotics	Day 7	Uva	Chiriqui	Type_1	C1bc	FALSE	FALSE
-PAN-32_Antibiotics_123	PAN-32	Antibiotics	Day 7	Uva	Chiriqui	Type_1	C1bc	FALSE	FALSE
-PAN-32_Antibiotics_124	PAN-32	Antibiotics	Day 7	Uva	Chiriqui	Type_1	C1bc	FALSE	FALSE
-PAN-34_Antibiotics_125	PAN-34	Antibiotics	Day 7	Uva	Chiriqui	Type_3	C1d	FALSE	FALSE
-PAN-34_Antibiotics_126	PAN-34	Antibiotics	Day 7	Uva	Chiriqui	Type_3	C1d	FALSE	FALSE
-PAN-34_Antibiotics_127	PAN-34	Antibiotics	Day 7	Uva	Chiriqui	Type_3	C1d	FALSE	FALSE
-PAN-34_Antibiotics_128	PAN-34	Antibiotics	Day 7	Uva	Chiriqui	Type_3	C1d	FALSE	FALSE
-PAN-35_Antibiotics_129	PAN-35	Antibiotics	Day 7	Uva	Chiriqui	Type_1	C1d	FALSE	FALSE
-PAN-35_Antibiotics_130	PAN-35	Antibiotics	Day 7	Uva	Chiriqui	Type_1	C1d	FALSE	FALSE
-PAN-35_Antibiotics_131	PAN-35	Antibiotics	Day 7	Uva	Chiriqui	Type_1	C1d	FALSE	FALSE
-PAN-35_Antibiotics_132	PAN-35	Antibiotics	Day 7	Uva	Chiriqui	Type_1	C1d	FALSE	FALSE
-PAN-37_Antibiotics_133	PAN-37	Antibiotics	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-37_Antibiotics_134	PAN-37	Antibiotics	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-37_Antibiotics_135	PAN-37	Antibiotics	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-37_Antibiotics_136	PAN-37	Antibiotics	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-39_Antibiotics_137	PAN-39	Antibiotics	Day 7	Saboga	Panama	Type_1	D1	FALSE	FALSE
-PAN-39_Antibiotics_138	PAN-39	Antibiotics	Day 7	Saboga	Panama	Type_1	D1	FALSE	FALSE
-PAN-39_Antibiotics_139	PAN-39	Antibiotics	Day 7	Saboga	Panama	Type_1	D1	FALSE	FALSE
-PAN-39_Antibiotics_140	PAN-39	Antibiotics	Day 7	Saboga	Panama	Type_1	D1	FALSE	FALSE
-PAN-41_Antibiotics_141	PAN-41	Antibiotics	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-41_Antibiotics_142	PAN-41	Antibiotics	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-41_Antibiotics_143	PAN-41	Antibiotics	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-41_Antibiotics_144	PAN-41	Antibiotics	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-43_Antibiotics_145	PAN-43	Antibiotics	Day 7	Saboga	Panama	Type_2	D1	FALSE	FALSE
-PAN-43_Antibiotics_146	PAN-43	Antibiotics	Day 7	Saboga	Panama	Type_2	D1	FALSE	FALSE
-PAN-43_Antibiotics_147	PAN-43	Antibiotics	Day 7	Saboga	Panama	Type_2	D1	FALSE	FALSE
-PAN-43_Antibiotics_148	PAN-43	Antibiotics	Day 7	Saboga	Panama	Type_2	D1	FALSE	FALSE
-PAN-44_Antibiotics_149	PAN-44	Antibiotics	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-44_Antibiotics_150	PAN-44	Antibiotics	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-44_Antibiotics_151	PAN-44	Antibiotics	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-44_Antibiotics_152	PAN-44	Antibiotics	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-5_Antibiotics_113	PAN-5	Antibiotics	Day 7	Saboga	Panama	Type_1	D1	FALSE	FALSE
-PAN-5_Antibiotics_114	PAN-5	Antibiotics	Day 7	Saboga	Panama	Type_1	D1	FALSE	FALSE
-PAN-5_Antibiotics_115	PAN-5	Antibiotics	Day 7	Saboga	Panama	Type_1	D1	FALSE	FALSE
-PAN-5_Antibiotics_116	PAN-5	Antibiotics	Day 7	Saboga	Panama	Type_1	D1	FALSE	FALSE
-PAN-78_Antibiotics_157	PAN-78	Antibiotics	Day 7	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-78_Antibiotics_158	PAN-78	Antibiotics	Day 7	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-78_Antibiotics_159	PAN-78	Antibiotics	Day 7	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-78_Antibiotics_160	PAN-78	Antibiotics	Day 7	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-79_Antibiotics_161	PAN-79	Antibiotics	Day 7	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-79_Antibiotics_162	PAN-79	Antibiotics	Day 7	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-79_Antibiotics_163	PAN-79	Antibiotics	Day 7	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-79_Antibiotics_164	PAN-79	Antibiotics	Day 7	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-83_Antibiotics_165	PAN-83	Antibiotics	Day 7	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-83_Antibiotics_166	PAN-83	Antibiotics	Day 7	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-83_Antibiotics_167	PAN-83	Antibiotics	Day 7	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-83_Antibiotics_168	PAN-83	Antibiotics	Day 7	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-URA-51_Antibiotics_153	URA-51	Antibiotics	Day 7	Uraba	Panama	Type_1	D1	FALSE	FALSE
-URA-51_Antibiotics_154	URA-51	Antibiotics	Day 7	Uraba	Panama	Type_1	D1	FALSE	FALSE
-URA-51_Antibiotics_155	URA-51	Antibiotics	Day 7	Uraba	Panama	Type_1	D1	FALSE	FALSE
-URA-51_Antibiotics_156	URA-51	Antibiotics	Day 7	Uraba	Panama	Type_1	D1	FALSE	FALSE
-PAN-10_Baseline_005	PAN-10	Baseline	Day 0	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-10_Baseline_006	PAN-10	Baseline	Day 0	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-10_Baseline_007	PAN-10	Baseline	Day 0	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-10_Baseline_008	PAN-10	Baseline	Day 0	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-32_Baseline_009	PAN-32	Baseline	Day 0	Uva	Chiriqui	Type_1	C1bc	FALSE	FALSE
-PAN-32_Baseline_010	PAN-32	Baseline	Day 0	Uva	Chiriqui	Type_1	C1bc	FALSE	FALSE
-PAN-32_Baseline_011	PAN-32	Baseline	Day 0	Uva	Chiriqui	Type_1	C1bc	FALSE	FALSE
-PAN-32_Baseline_012	PAN-32	Baseline	Day 0	Uva	Chiriqui	Type_1	C1bc	FALSE	FALSE
-PAN-34_Baseline_013	PAN-34	Baseline	Day 0	Uva	Chiriqui	Type_3	C1d	FALSE	FALSE
-PAN-34_Baseline_014	PAN-34	Baseline	Day 0	Uva	Chiriqui	Type_3	C1d	FALSE	FALSE
-PAN-34_Baseline_015	PAN-34	Baseline	Day 0	Uva	Chiriqui	Type_3	C1d	FALSE	FALSE
-PAN-34_Baseline_016	PAN-34	Baseline	Day 0	Uva	Chiriqui	Type_3	C1d	FALSE	FALSE
-PAN-35_Baseline_017	PAN-35	Baseline	Day 0	Uva	Chiriqui	Type_1	C1d	FALSE	FALSE
-PAN-35_Baseline_018	PAN-35	Baseline	Day 0	Uva	Chiriqui	Type_1	C1d	FALSE	FALSE
-PAN-35_Baseline_019	PAN-35	Baseline	Day 0	Uva	Chiriqui	Type_1	C1d	FALSE	FALSE
-PAN-35_Baseline_020	PAN-35	Baseline	Day 0	Uva	Chiriqui	Type_1	C1d	FALSE	FALSE
-PAN-37_Baseline_021	PAN-37	Baseline	Day 0	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-37_Baseline_022	PAN-37	Baseline	Day 0	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-37_Baseline_023	PAN-37	Baseline	Day 0	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-37_Baseline_024	PAN-37	Baseline	Day 0	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-39_Baseline_025	PAN-39	Baseline	Day 0	Saboga	Panama	Type_1	D1	FALSE	FALSE
-PAN-39_Baseline_026	PAN-39	Baseline	Day 0	Saboga	Panama	Type_1	D1	FALSE	FALSE
-PAN-39_Baseline_027	PAN-39	Baseline	Day 0	Saboga	Panama	Type_1	D1	FALSE	FALSE
-PAN-39_Baseline_028	PAN-39	Baseline	Day 0	Saboga	Panama	Type_1	D1	FALSE	FALSE
-PAN-41_Baseline_029	PAN-41	Baseline	Day 0	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-41_Baseline_030	PAN-41	Baseline	Day 0	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-41_Baseline_031	PAN-41	Baseline	Day 0	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-41_Baseline_032	PAN-41	Baseline	Day 0	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-43_Baseline_033	PAN-43	Baseline	Day 0	Saboga	Panama	Type_2	D1	FALSE	FALSE
-PAN-43_Baseline_034	PAN-43	Baseline	Day 0	Saboga	Panama	Type_2	D1	FALSE	FALSE
-PAN-43_Baseline_035	PAN-43	Baseline	Day 0	Saboga	Panama	Type_2	D1	FALSE	FALSE
-PAN-43_Baseline_036	PAN-43	Baseline	Day 0	Saboga	Panama	Type_2	D1	FALSE	FALSE
-PAN-44_Baseline_037	PAN-44	Baseline	Day 0	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-44_Baseline_038	PAN-44	Baseline	Day 0	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-44_Baseline_039	PAN-44	Baseline	Day 0	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-44_Baseline_040	PAN-44	Baseline	Day 0	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-5_Baseline_001	PAN-5	Baseline	Day 0	Saboga	Panama	Type_1	D1	FALSE	FALSE
-PAN-5_Baseline_002	PAN-5	Baseline	Day 0	Saboga	Panama	Type_1	D1	FALSE	FALSE
-PAN-5_Baseline_003	PAN-5	Baseline	Day 0	Saboga	Panama	Type_1	D1	FALSE	FALSE
-PAN-5_Baseline_004	PAN-5	Baseline	Day 0	Saboga	Panama	Type_1	D1	FALSE	FALSE
-PAN-78_Baseline_045	PAN-78	Baseline	Day 0	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-78_Baseline_046	PAN-78	Baseline	Day 0	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-78_Baseline_047	PAN-78	Baseline	Day 0	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-78_Baseline_048	PAN-78	Baseline	Day 0	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-79_Baseline_049	PAN-79	Baseline	Day 0	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-79_Baseline_050	PAN-79	Baseline	Day 0	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-79_Baseline_051	PAN-79	Baseline	Day 0	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-79_Baseline_052	PAN-79	Baseline	Day 0	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-83_Baseline_053	PAN-83	Baseline	Day 0	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-83_Baseline_054	PAN-83	Baseline	Day 0	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-83_Baseline_055	PAN-83	Baseline	Day 0	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-83_Baseline_056	PAN-83	Baseline	Day 0	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-URA-51_Baseline_041	URA-51	Baseline	Day 0	Uraba	Panama	Type_1	D1	FALSE	FALSE
-URA-51_Baseline_042	URA-51	Baseline	Day 0	Uraba	Panama	Type_1	D1	FALSE	FALSE
-URA-51_Baseline_043	URA-51	Baseline	Day 0	Uraba	Panama	Type_1	D1	FALSE	FALSE
-URA-51_Baseline_044	URA-51	Baseline	Day 0	Uraba	Panama	Type_1	D1	FALSE	FALSE
-PAN-10_Control_061	PAN-10	Control	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-10_Control_062	PAN-10	Control	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-10_Control_063	PAN-10	Control	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-10_Control_064	PAN-10	Control	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-32_Control_065	PAN-32	Control	Day 7	Uva	Chiriqui	Type_1	C1bc	FALSE	FALSE
-PAN-32_Control_066	PAN-32	Control	Day 7	Uva	Chiriqui	Type_1	C1bc	FALSE	FALSE
-PAN-32_Control_067	PAN-32	Control	Day 7	Uva	Chiriqui	Type_1	C1bc	FALSE	FALSE
-PAN-32_Control_068	PAN-32	Control	Day 7	Uva	Chiriqui	Type_1	C1bc	FALSE	FALSE
-PAN-34_Control_069	PAN-34	Control	Day 7	Uva	Chiriqui	Type_3	C1d	FALSE	FALSE
-PAN-34_Control_070	PAN-34	Control	Day 7	Uva	Chiriqui	Type_3	C1d	FALSE	FALSE
-PAN-34_Control_071	PAN-34	Control	Day 7	Uva	Chiriqui	Type_3	C1d	FALSE	FALSE
-PAN-34_Control_072	PAN-34	Control	Day 7	Uva	Chiriqui	Type_3	C1d	FALSE	FALSE
-PAN-35_Control_073	PAN-35	Control	Day 7	Uva	Chiriqui	Type_1	C1d	FALSE	FALSE
-PAN-35_Control_074	PAN-35	Control	Day 7	Uva	Chiriqui	Type_1	C1d	FALSE	FALSE
-PAN-35_Control_075	PAN-35	Control	Day 7	Uva	Chiriqui	Type_1	C1d	FALSE	FALSE
-PAN-35_Control_076	PAN-35	Control	Day 7	Uva	Chiriqui	Type_1	C1d	FALSE	FALSE
-PAN-37_Control_077	PAN-37	Control	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-37_Control_078	PAN-37	Control	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-37_Control_079	PAN-37	Control	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-37_Control_080	PAN-37	Control	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-39_Control_081	PAN-39	Control	Day 7	Saboga	Panama	Type_1	D1	FALSE	FALSE
-PAN-39_Control_082	PAN-39	Control	Day 7	Saboga	Panama	Type_1	D1	FALSE	FALSE
-PAN-39_Control_083	PAN-39	Control	Day 7	Saboga	Panama	Type_1	D1	FALSE	FALSE
-PAN-39_Control_084	PAN-39	Control	Day 7	Saboga	Panama	Type_1	D1	FALSE	FALSE
-PAN-41_Control_085	PAN-41	Control	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-41_Control_086	PAN-41	Control	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-41_Control_087	PAN-41	Control	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-41_Control_088	PAN-41	Control	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-43_Control_089	PAN-43	Control	Day 7	Saboga	Panama	Type_2	D1	FALSE	FALSE
-PAN-43_Control_090	PAN-43	Control	Day 7	Saboga	Panama	Type_2	D1	FALSE	FALSE
-PAN-43_Control_091	PAN-43	Control	Day 7	Saboga	Panama	Type_2	D1	FALSE	FALSE
-PAN-43_Control_092	PAN-43	Control	Day 7	Saboga	Panama	Type_2	D1	FALSE	FALSE
-PAN-44_Control_093	PAN-44	Control	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-44_Control_094	PAN-44	Control	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-44_Control_095	PAN-44	Control	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-44_Control_096	PAN-44	Control	Day 7	Saboga	Panama	Type_3	C1d	FALSE	FALSE
-PAN-5_Control_057	PAN-5	Control	Day 7	Saboga	Panama	Type_1	D1	FALSE	FALSE
-PAN-5_Control_058	PAN-5	Control	Day 7	Saboga	Panama	Type_1	D1	FALSE	FALSE
-PAN-5_Control_059	PAN-5	Control	Day 7	Saboga	Panama	Type_1	D1	FALSE	FALSE
-PAN-5_Control_060	PAN-5	Control	Day 7	Saboga	Panama	Type_1	D1	FALSE	FALSE
-PAN-78_Control_101	PAN-78	Control	Day 7	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-78_Control_102	PAN-78	Control	Day 7	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-78_Control_103	PAN-78	Control	Day 7	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-78_Control_104	PAN-78	Control	Day 7	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-79_Control_105	PAN-79	Control	Day 7	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-79_Control_106	PAN-79	Control	Day 7	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-79_Control_107	PAN-79	Control	Day 7	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-79_Control_108	PAN-79	Control	Day 7	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-83_Control_109	PAN-83	Control	Day 7	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-83_Control_110	PAN-83	Control	Day 7	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-83_Control_111	PAN-83	Control	Day 7	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-PAN-83_Control_112	PAN-83	Control	Day 7	Uva	Chiriqui	Type_1	D1	FALSE	FALSE
-URA-51_Control_097	URA-51	Control	Day 7	Uraba	Panama	Type_1	D1	FALSE	FALSE
-URA-51_Control_098	URA-51	Control	Day 7	Uraba	Panama	Type_1	D1	FALSE	FALSE
-URA-51_Control_099	URA-51	Control	Day 7	Uraba	Panama	Type_1	D1	FALSE	FALSE
-URA-51_Control_100	URA-51	Control	Day 7	Uraba	Panama	Type_1	D1	FALSE	FALSE
-D1FSW1	NA	FSW_Controls	Day 0	NA	NA	NA	NA	TRUE	FALSE
-D1FSW2	NA	FSW_Controls	Day 0	NA	NA	NA	NA	TRUE	FALSE
-D1FSW3	NA	FSW_Controls	Day 0	NA	NA	NA	NA	TRUE	FALSE
-D7FSW1	NA	FSW_Controls	Day 7	NA	NA	NA	NA	TRUE	FALSE
-D7FSW2	NA	FSW_Controls	Day 7	NA	NA	NA	NA	TRUE	FALSE
-D7FSW3	NA	FSW_Controls	Day 7	NA	NA	NA	NA	TRUE	FALSE
-Negative1	NA	Neg_Controls	Day 7	NA	NA	NA	NA	TRUE	TRUE
-Negative2	NA	Neg_Controls	Day 7	NA	NA	NA	NA	TRUE	TRUE
-Negative3	NA	Neg_Controls	Day 7	NA	NA	NA	NA	TRUE	TRUE
-D1seawater1	NA	SW_Controls	Day 0	NA	NA	NA	NA	TRUE	FALSE
-D1seawater2	NA	SW_Controls	Day 0	NA	NA	NA	NA	TRUE	FALSE
-D1seawater3	NA	SW_Controls	Day 0	NA	NA	NA	NA	TRUE	FALSE
-D7seawater1	NA	SW_Controls	Day 7	NA	NA	NA	NA	TRUE	FALSE
-D7seawater2	NA	SW_Controls	Day 7	NA	NA	NA	NA	TRUE	FALSE
-D7seawater3	NA	SW_Controls	Day 7	NA	NA	NA	NA	TRUE	FALSE
-ZYMO1	NA	ZYMO_Controls	Day 7	NA	NA	NA	NA	TRUE	FALSE
-ZYMO2	NA	ZYMO_Controls	Day 7	NA	NA	NA	NA	TRUE	FALSE
-ZYMO3	NA	ZYMO_Controls	Day 7	NA	NA	NA	NA	TRUE	FALSE
+#SampleID	Genotype	Treatment	Sampling_Time	Seq_Control	Neg_Control
+PAN-10_Antibiotics_117	PAN-10	Antibiotics	Day 7	FALSE	FALSE
+PAN-10_Antibiotics_118	PAN-10	Antibiotics	Day 7	FALSE	FALSE
+PAN-10_Antibiotics_119	PAN-10	Antibiotics	Day 7	FALSE	FALSE
+PAN-10_Antibiotics_120	PAN-10	Antibiotics	Day 7	FALSE	FALSE
+PAN-32_Antibiotics_121	PAN-32	Antibiotics	Day 7	FALSE	FALSE
+PAN-32_Antibiotics_122	PAN-32	Antibiotics	Day 7	FALSE	FALSE
+PAN-32_Antibiotics_123	PAN-32	Antibiotics	Day 7	FALSE	FALSE
+PAN-32_Antibiotics_124	PAN-32	Antibiotics	Day 7	FALSE	FALSE
+PAN-34_Antibiotics_125	PAN-34	Antibiotics	Day 7	FALSE	FALSE
+PAN-34_Antibiotics_126	PAN-34	Antibiotics	Day 7	FALSE	FALSE
+PAN-34_Antibiotics_127	PAN-34	Antibiotics	Day 7	FALSE	FALSE
+PAN-34_Antibiotics_128	PAN-34	Antibiotics	Day 7	FALSE	FALSE
+PAN-35_Antibiotics_129	PAN-35	Antibiotics	Day 7	FALSE	FALSE
+PAN-35_Antibiotics_130	PAN-35	Antibiotics	Day 7	FALSE	FALSE
+PAN-35_Antibiotics_131	PAN-35	Antibiotics	Day 7	FALSE	FALSE
+PAN-35_Antibiotics_132	PAN-35	Antibiotics	Day 7	FALSE	FALSE
+PAN-37_Antibiotics_133	PAN-37	Antibiotics	Day 7	FALSE	FALSE
+PAN-37_Antibiotics_134	PAN-37	Antibiotics	Day 7	FALSE	FALSE
+PAN-37_Antibiotics_135	PAN-37	Antibiotics	Day 7	FALSE	FALSE
+PAN-37_Antibiotics_136	PAN-37	Antibiotics	Day 7	FALSE	FALSE
+PAN-39_Antibiotics_137	PAN-39	Antibiotics	Day 7	FALSE	FALSE
+PAN-39_Antibiotics_138	PAN-39	Antibiotics	Day 7	FALSE	FALSE
+PAN-39_Antibiotics_139	PAN-39	Antibiotics	Day 7	FALSE	FALSE
+PAN-39_Antibiotics_140	PAN-39	Antibiotics	Day 7	FALSE	FALSE
+PAN-41_Antibiotics_141	PAN-41	Antibiotics	Day 7	FALSE	FALSE
+PAN-41_Antibiotics_142	PAN-41	Antibiotics	Day 7	FALSE	FALSE
+PAN-41_Antibiotics_143	PAN-41	Antibiotics	Day 7	FALSE	FALSE
+PAN-41_Antibiotics_144	PAN-41	Antibiotics	Day 7	FALSE	FALSE
+PAN-43_Antibiotics_145	PAN-43	Antibiotics	Day 7	FALSE	FALSE
+PAN-43_Antibiotics_146	PAN-43	Antibiotics	Day 7	FALSE	FALSE
+PAN-43_Antibiotics_147	PAN-43	Antibiotics	Day 7	FALSE	FALSE
+PAN-43_Antibiotics_148	PAN-43	Antibiotics	Day 7	FALSE	FALSE
+PAN-44_Antibiotics_149	PAN-44	Antibiotics	Day 7	FALSE	FALSE
+PAN-44_Antibiotics_150	PAN-44	Antibiotics	Day 7	FALSE	FALSE
+PAN-44_Antibiotics_151	PAN-44	Antibiotics	Day 7	FALSE	FALSE
+PAN-44_Antibiotics_152	PAN-44	Antibiotics	Day 7	FALSE	FALSE
+PAN-05_Antibiotics_113	PAN-05	Antibiotics	Day 7	FALSE	FALSE
+PAN-05_Antibiotics_114	PAN-05	Antibiotics	Day 7	FALSE	FALSE
+PAN-05_Antibiotics_115	PAN-05	Antibiotics	Day 7	FALSE	FALSE
+PAN-05_Antibiotics_116	PAN-05	Antibiotics	Day 7	FALSE	FALSE
+PAN-78_Antibiotics_157	PAN-78	Antibiotics	Day 7	FALSE	FALSE
+PAN-78_Antibiotics_158	PAN-78	Antibiotics	Day 7	FALSE	FALSE
+PAN-78_Antibiotics_159	PAN-78	Antibiotics	Day 7	FALSE	FALSE
+PAN-78_Antibiotics_160	PAN-78	Antibiotics	Day 7	FALSE	FALSE
+PAN-79_Antibiotics_161	PAN-79	Antibiotics	Day 7	FALSE	FALSE
+PAN-79_Antibiotics_162	PAN-79	Antibiotics	Day 7	FALSE	FALSE
+PAN-79_Antibiotics_163	PAN-79	Antibiotics	Day 7	FALSE	FALSE
+PAN-79_Antibiotics_164	PAN-79	Antibiotics	Day 7	FALSE	FALSE
+PAN-83_Antibiotics_165	PAN-83	Antibiotics	Day 7	FALSE	FALSE
+PAN-83_Antibiotics_166	PAN-83	Antibiotics	Day 7	FALSE	FALSE
+PAN-83_Antibiotics_167	PAN-83	Antibiotics	Day 7	FALSE	FALSE
+PAN-83_Antibiotics_168	PAN-83	Antibiotics	Day 7	FALSE	FALSE
+URA-51_Antibiotics_153	URA-51	Antibiotics	Day 7	FALSE	FALSE
+URA-51_Antibiotics_154	URA-51	Antibiotics	Day 7	FALSE	FALSE
+URA-51_Antibiotics_155	URA-51	Antibiotics	Day 7	FALSE	FALSE
+URA-51_Antibiotics_156	URA-51	Antibiotics	Day 7	FALSE	FALSE
+PAN-10_Baseline_005	PAN-10	Baseline	Day 0	FALSE	FALSE
+PAN-10_Baseline_006	PAN-10	Baseline	Day 0	FALSE	FALSE
+PAN-10_Baseline_007	PAN-10	Baseline	Day 0	FALSE	FALSE
+PAN-10_Baseline_008	PAN-10	Baseline	Day 0	FALSE	FALSE
+PAN-32_Baseline_009	PAN-32	Baseline	Day 0	FALSE	FALSE
+PAN-32_Baseline_010	PAN-32	Baseline	Day 0	FALSE	FALSE
+PAN-32_Baseline_011	PAN-32	Baseline	Day 0	FALSE	FALSE
+PAN-32_Baseline_012	PAN-32	Baseline	Day 0	FALSE	FALSE
+PAN-34_Baseline_013	PAN-34	Baseline	Day 0	FALSE	FALSE
+PAN-34_Baseline_014	PAN-34	Baseline	Day 0	FALSE	FALSE
+PAN-34_Baseline_015	PAN-34	Baseline	Day 0	FALSE	FALSE
+PAN-34_Baseline_016	PAN-34	Baseline	Day 0	FALSE	FALSE
+PAN-35_Baseline_017	PAN-35	Baseline	Day 0	FALSE	FALSE
+PAN-35_Baseline_018	PAN-35	Baseline	Day 0	FALSE	FALSE
+PAN-35_Baseline_019	PAN-35	Baseline	Day 0	FALSE	FALSE
+PAN-35_Baseline_020	PAN-35	Baseline	Day 0	FALSE	FALSE
+PAN-37_Baseline_021	PAN-37	Baseline	Day 0	FALSE	FALSE
+PAN-37_Baseline_022	PAN-37	Baseline	Day 0	FALSE	FALSE
+PAN-37_Baseline_023	PAN-37	Baseline	Day 0	FALSE	FALSE
+PAN-37_Baseline_024	PAN-37	Baseline	Day 0	FALSE	FALSE
+PAN-39_Baseline_025	PAN-39	Baseline	Day 0	FALSE	FALSE
+PAN-39_Baseline_026	PAN-39	Baseline	Day 0	FALSE	FALSE
+PAN-39_Baseline_027	PAN-39	Baseline	Day 0	FALSE	FALSE
+PAN-39_Baseline_028	PAN-39	Baseline	Day 0	FALSE	FALSE
+PAN-41_Baseline_029	PAN-41	Baseline	Day 0	FALSE	FALSE
+PAN-41_Baseline_030	PAN-41	Baseline	Day 0	FALSE	FALSE
+PAN-41_Baseline_031	PAN-41	Baseline	Day 0	FALSE	FALSE
+PAN-41_Baseline_032	PAN-41	Baseline	Day 0	FALSE	FALSE
+PAN-43_Baseline_033	PAN-43	Baseline	Day 0	FALSE	FALSE
+PAN-43_Baseline_034	PAN-43	Baseline	Day 0	FALSE	FALSE
+PAN-43_Baseline_035	PAN-43	Baseline	Day 0	FALSE	FALSE
+PAN-43_Baseline_036	PAN-43	Baseline	Day 0	FALSE	FALSE
+PAN-44_Baseline_037	PAN-44	Baseline	Day 0	FALSE	FALSE
+PAN-44_Baseline_038	PAN-44	Baseline	Day 0	FALSE	FALSE
+PAN-44_Baseline_039	PAN-44	Baseline	Day 0	FALSE	FALSE
+PAN-44_Baseline_040	PAN-44	Baseline	Day 0	FALSE	FALSE
+PAN-05_Baseline_001	PAN-05	Baseline	Day 0	FALSE	FALSE
+PAN-05_Baseline_002	PAN-05	Baseline	Day 0	FALSE	FALSE
+PAN-05_Baseline_003	PAN-05	Baseline	Day 0	FALSE	FALSE
+PAN-05_Baseline_004	PAN-05	Baseline	Day 0	FALSE	FALSE
+PAN-78_Baseline_045	PAN-78	Baseline	Day 0	FALSE	FALSE
+PAN-78_Baseline_046	PAN-78	Baseline	Day 0	FALSE	FALSE
+PAN-78_Baseline_047	PAN-78	Baseline	Day 0	FALSE	FALSE
+PAN-78_Baseline_048	PAN-78	Baseline	Day 0	FALSE	FALSE
+PAN-79_Baseline_049	PAN-79	Baseline	Day 0	FALSE	FALSE
+PAN-79_Baseline_050	PAN-79	Baseline	Day 0	FALSE	FALSE
+PAN-79_Baseline_051	PAN-79	Baseline	Day 0	FALSE	FALSE
+PAN-79_Baseline_052	PAN-79	Baseline	Day 0	FALSE	FALSE
+PAN-83_Baseline_053	PAN-83	Baseline	Day 0	FALSE	FALSE
+PAN-83_Baseline_054	PAN-83	Baseline	Day 0	FALSE	FALSE
+PAN-83_Baseline_055	PAN-83	Baseline	Day 0	FALSE	FALSE
+PAN-83_Baseline_056	PAN-83	Baseline	Day 0	FALSE	FALSE
+URA-51_Baseline_041	URA-51	Baseline	Day 0	FALSE	FALSE
+URA-51_Baseline_042	URA-51	Baseline	Day 0	FALSE	FALSE
+URA-51_Baseline_043	URA-51	Baseline	Day 0	FALSE	FALSE
+URA-51_Baseline_044	URA-51	Baseline	Day 0	FALSE	FALSE
+PAN-10_Control_061	PAN-10	Control	Day 7	FALSE	FALSE
+PAN-10_Control_062	PAN-10	Control	Day 7	FALSE	FALSE
+PAN-10_Control_063	PAN-10	Control	Day 7	FALSE	FALSE
+PAN-10_Control_064	PAN-10	Control	Day 7	FALSE	FALSE
+PAN-32_Control_065	PAN-32	Control	Day 7	FALSE	FALSE
+PAN-32_Control_066	PAN-32	Control	Day 7	FALSE	FALSE
+PAN-32_Control_067	PAN-32	Control	Day 7	FALSE	FALSE
+PAN-32_Control_068	PAN-32	Control	Day 7	FALSE	FALSE
+PAN-34_Control_069	PAN-34	Control	Day 7	FALSE	FALSE
+PAN-34_Control_070	PAN-34	Control	Day 7	FALSE	FALSE
+PAN-34_Control_071	PAN-34	Control	Day 7	FALSE	FALSE
+PAN-34_Control_072	PAN-34	Control	Day 7	FALSE	FALSE
+PAN-35_Control_073	PAN-35	Control	Day 7	FALSE	FALSE
+PAN-35_Control_074	PAN-35	Control	Day 7	FALSE	FALSE
+PAN-35_Control_075	PAN-35	Control	Day 7	FALSE	FALSE
+PAN-35_Control_076	PAN-35	Control	Day 7	FALSE	FALSE
+PAN-37_Control_077	PAN-37	Control	Day 7	FALSE	FALSE
+PAN-37_Control_078	PAN-37	Control	Day 7	FALSE	FALSE
+PAN-37_Control_079	PAN-37	Control	Day 7	FALSE	FALSE
+PAN-37_Control_080	PAN-37	Control	Day 7	FALSE	FALSE
+PAN-39_Control_081	PAN-39	Control	Day 7	FALSE	FALSE
+PAN-39_Control_082	PAN-39	Control	Day 7	FALSE	FALSE
+PAN-39_Control_083	PAN-39	Control	Day 7	FALSE	FALSE
+PAN-39_Control_084	PAN-39	Control	Day 7	FALSE	FALSE
+PAN-41_Control_085	PAN-41	Control	Day 7	FALSE	FALSE
+PAN-41_Control_086	PAN-41	Control	Day 7	FALSE	FALSE
+PAN-41_Control_087	PAN-41	Control	Day 7	FALSE	FALSE
+PAN-41_Control_088	PAN-41	Control	Day 7	FALSE	FALSE
+PAN-43_Control_089	PAN-43	Control	Day 7	FALSE	FALSE
+PAN-43_Control_090	PAN-43	Control	Day 7	FALSE	FALSE
+PAN-43_Control_091	PAN-43	Control	Day 7	FALSE	FALSE
+PAN-43_Control_092	PAN-43	Control	Day 7	FALSE	FALSE
+PAN-44_Control_093	PAN-44	Control	Day 7	FALSE	FALSE
+PAN-44_Control_094	PAN-44	Control	Day 7	FALSE	FALSE
+PAN-44_Control_095	PAN-44	Control	Day 7	FALSE	FALSE
+PAN-44_Control_096	PAN-44	Control	Day 7	FALSE	FALSE
+PAN-05_Control_057	PAN-05	Control	Day 7	FALSE	FALSE
+PAN-05_Control_058	PAN-05	Control	Day 7	FALSE	FALSE
+PAN-05_Control_059	PAN-05	Control	Day 7	FALSE	FALSE
+PAN-05_Control_060	PAN-05	Control	Day 7	FALSE	FALSE
+PAN-78_Control_101	PAN-78	Control	Day 7	FALSE	FALSE
+PAN-78_Control_102	PAN-78	Control	Day 7	FALSE	FALSE
+PAN-78_Control_103	PAN-78	Control	Day 7	FALSE	FALSE
+PAN-78_Control_104	PAN-78	Control	Day 7	FALSE	FALSE
+PAN-79_Control_105	PAN-79	Control	Day 7	FALSE	FALSE
+PAN-79_Control_106	PAN-79	Control	Day 7	FALSE	FALSE
+PAN-79_Control_107	PAN-79	Control	Day 7	FALSE	FALSE
+PAN-79_Control_108	PAN-79	Control	Day 7	FALSE	FALSE
+PAN-83_Control_109	PAN-83	Control	Day 7	FALSE	FALSE
+PAN-83_Control_110	PAN-83	Control	Day 7	FALSE	FALSE
+PAN-83_Control_111	PAN-83	Control	Day 7	FALSE	FALSE
+PAN-83_Control_112	PAN-83	Control	Day 7	FALSE	FALSE
+URA-51_Control_097	URA-51	Control	Day 7	FALSE	FALSE
+URA-51_Control_098	URA-51	Control	Day 7	FALSE	FALSE
+URA-51_Control_099	URA-51	Control	Day 7	FALSE	FALSE
+URA-51_Control_100	URA-51	Control	Day 7	FALSE	FALSE
+D1FSW1	NA	FSW_Controls	Day 0	TRUE	FALSE
+D1FSW2	NA	FSW_Controls	Day 0	TRUE	FALSE
+D1FSW3	NA	FSW_Controls	Day 0	TRUE	FALSE
+D7FSW1	NA	FSW_Controls	Day 7	TRUE	FALSE
+D7FSW2	NA	FSW_Controls	Day 7	TRUE	FALSE
+D7FSW3	NA	FSW_Controls	Day 7	TRUE	FALSE
+Negative1	NA	Neg_Controls	Day 7	TRUE	TRUE
+Negative2	NA	Neg_Controls	Day 7	TRUE	TRUE
+Negative3	NA	Neg_Controls	Day 7	TRUE	TRUE
+D1seawater1	NA	SW_Controls	Day 0	TRUE	FALSE
+D1seawater2	NA	SW_Controls	Day 0	TRUE	FALSE
+D1seawater3	NA	SW_Controls	Day 0	TRUE	FALSE
+D7seawater1	NA	SW_Controls	Day 7	TRUE	FALSE
+D7seawater2	NA	SW_Controls	Day 7	TRUE	FALSE
+D7seawater3	NA	SW_Controls	Day 7	TRUE	FALSE
+ZYMO1	NA	ZYMO_Controls	Day 7	TRUE	FALSE
+ZYMO2	NA	ZYMO_Controls	Day 7	TRUE	FALSE
+ZYMO3	NA	ZYMO_Controls	Day 7	TRUE	FALSE

@@ -9,7 +9,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir = "~/computing/projects/anti_phys")
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
 ```
 ```{r packages}
 library("tidyverse")
@@ -26,10 +26,9 @@ readdepth <- read_tsv("./outputs/qiime2/QC/per-sample-fastq-counts.tsv", col_nam
 readdepth <- left_join(sample_metadata, readdepth, by = "Sample_ID")
 ```
 
-### Read depth QC plot
+#  Read depth QC plot
 ```{r rd_qc}
-# readdepth <- dplyr::filter(readdepth, Treatment == "control" | Treatment == "Heat" | Treatment == "Antibiotics" | Treatment == "Antibiotics.Heat" | Treatment == "positive" | Treatment == "negative") %>%
-  # dplyr::filter(Reef == "Houwan" | Reef == "Wanglitung" | Reef == "controls")
+# readdepth <- dplyr::filter(readdepth, Treatment == "control" | Treatment == "Heat" | Treatment == "Antibiotics" | Treatment == "Antibiotics.Heat" | Treatment == "positive" | Treatment == "negative")
 ###
 ###
 # readdepth$Treatment <- factor(readdepth$Treatment, levels = treatment_levels, ordered = TRUE)
@@ -39,30 +38,35 @@ readdepth <- left_join(sample_metadata, readdepth, by = "Sample_ID")
 ggdepth <- ggplot(readdepth, aes(Sample_ID, forward_count)) +
   geom_bar(stat = "identity", aes(color = Treatment, fill = Treatment)) +
   # scale_y_continuous(trans = 'log10') +
-  scale_color_manual(values = c(treatcolors, "black", "black")) +
-  scale_fill_manual(values = c(treatcolors, "dark gray", "light gray")) +
+  # scale_color_manual(values = c(treatcolors, "black", "black")) +
+  # scale_fill_manual(values = c(treatcolors, "dark gray", "light gray")) +
   ylab("16S Read Count") +
   theme(axis.text.x = element_text(angle = 90)) +
   ggtitle("Total number of 16S reads per sample")
+# 
+print(ggdepth)
 ggsave(file = "./outputs/phyloseq_results/figures/readdepth.pdf", width = 400, height = 150,  units = "mm", device = "pdf")
 ```
 ```{r}
 readdepth %>% 
-  filter(forward_count > 1000) %>% 
+  filter(forward_count > 1000) %>%
   summarise(mean = mean(forward_count),
-            se = se(forward_count))
+            sd = sd(forward_count))
 ```
 
-
-### Rarefaction curve
+### Supplementary Figure 6
 ```{r rare_curve}
-grare <- ggrare(ps, step = 10, color = "Treatment", plot = FALSE, se = TRUE)
+pdf("./outputs/figures/FigS6_rarefaction_curve.pdf", width = 6.5, height = 4.5)
+# Rarefaction curve
+rarefy_title <- "Rarefaction curve of 16S amplicon sequence variants"
+grare <- ggrare(ps_samples, step = 100, color = "Treatment", plot = F, se = F)
 grare <- grare + 
   scale_color_manual(values = c(treatcolors, rep("black", 4))) +
+  scale_x_continuous(breaks = seq(0, 40000, 5000), name = "Sequence read depth (count)") +
+  scale_y_continuous(breaks = seq(0, 400, 50), name = "ASVs (count)") +
   # facet_wrap(~Treatment) +
-  ggtitle("Rarefaction curve of 16S amplicon sequence variants")
+  ggtitle(rarefy_title)
 print(grare)
-ggsave(file = "./outputs/phyloseq_results/figures/rarefaction_curve.pdf", width = 400, height = 150,  units = "mm", device = "pdf")
-# ggsave(file = "./manuscript_figures/FigS##_rarefactioncurve.pdf", width = 169, height = 85,  units = "mm", device = "pdf")
+dev.off()
 ```
 

@@ -225,7 +225,7 @@ ps_assigned <- subset_taxa(ps_assigned, Order != "Chloroplast") # ## taxa filter
 ps_assigned <- subset_taxa(ps_assigned, Family != "Mitochondria") # ## taxa filtered out
 ps_assigned
 # otu_table()   OTU Table:         [ 1835 taxa and 184 samples ]
-# sample_data() Sample Data:       [ 184 samples by 11 sample variables ]
+# sample_data() Sample Data:       [ 184 samples by 12 sample variables ]
 # tax_table()   Taxonomy Table:    [ 1835 taxa by 7 taxonomic ranks ]
 # phy_tree()    Phylogenetic Tree: [ 1835 tips and 1823 internal nodes ]
 ```
@@ -630,6 +630,7 @@ beta_boxplot
 ```{r}
 samples_only <- grep("_", samples, value = TRUE, invert = FALSE)
 ps_filtered_samples <- prune_samples(samples_only, ps_filtered)
+ps_samples <- prune_samples(samples_only, ps)
 ```
 ## Compositional Data Analysis (CoDA) 
 ```{r codaseq_export}
@@ -924,7 +925,7 @@ colors_orders <- taxa_color_seq(ps_filtered_rel, taxa_rank = "Order")
 write_csv(colors_orders, "./Rmd/taxa_colors/colors_order.csv")
 # # Families
 colors_families <- taxa_color_seq(ps_filtered_rel, taxa_rank = "Family")
-# write_csv(colors_families, "./Rmd/taxa_colors/colors_families_defense.csv")
+# write_csv(colors_families, "./Rmd/taxa_colors/colors_families.csv")
 # # Genera
 colors_genera <- taxa_color_seq(ps_filtered_rel, taxa_rank = "Genus")
 write_csv(colors_genera, "./Rmd/taxa_colors/colors_genera.csv")
@@ -941,7 +942,7 @@ taxa_barplot(ps_filtered_rel, "Family", colors_families$Family, colors_families)
 taxa_barplot(ps_filtered_rel, "Genus", colors_genera$Genus, colors_genera)
 taxa_barplot(ps_filtered_rel, "Species", colors_species$Species, colors_species)
 ```
-### Supplementary Figure
+
 ```{r family_barplot_3B}
 pdf("./outputs/phyloseq_results/figures/family_barplot.pdf", height = 8.5, width = 18)
 taxa_barplot(ps_filtered_rel, "Family", colors_families$Family, colors_families)
@@ -957,12 +958,24 @@ colors_families$Family == colors_families_defense$Family
 colors_families_defense$hex <- gplots::col2hex(colors_families_defense$colors)
 ```
 ```{r}
-title <- expression(paste("Relative abundance of ", italic("Pocillopora"), "-associated bacteria families across treatments", collapse = ""))
 # taxa_barplot_simple(ps_filtered_rel, "Phylum", colors_phyla$Phylum, colors_phyla)
 # pdf("./outputs/phyloseq_results/figures/family_barplot_simple_defense.pdf", height = 7, width = 10)
 pdf("./outputs/phyloseq_results/figures/family_barplot_simple_dissertation.pdf", height = 10, width = 9)
 taxa_barplot_simple(ps_filtered_rel, "Family", colors_families$Family, colors_families) + ggtitle(title)
+dev.off()
 ```
+### Supplementary Figure 7
+```{r}
+pdf("./outputs/figures/FigS7_family_barplot.pdf", width = 9, height = 10)
+title <- expression(paste("Relative abundance of ", italic("Pocillopora"), "-associated bacteria families across treatments", collapse = ""))
+# 
+figS7 <- taxa_barplot_simple(ps_filtered_rel, "Family", colors_families$Family, colors_families) + ggtitle(title)
+# 
+print(figS7)
+# 
+dev.off()
+```
+
 ## Alpha diversity plots and statistics
 ```{r estimate_richness}
 # Use unfiltered, unrarefied dataset for alpha diversity metrics calculations
@@ -1063,9 +1076,9 @@ kruskal.test(data=ps_richness_meta, Simpson ~ Treatment)
 ```{r}
 se <- function(x) sd(x) / sqrt(length(x))
 ps_richness_meta %>% 
-  group_by(Treatment) %>% 
-  summarise(mean_obs = mean(Observed),
-            se_obs = se(Observed))
+  dplyr::group_by(Treatment) %>% 
+  dplyr::summarise(mean_obs = mean(Observed),
+            sd_obs = sd(Observed))
 ```
 ```{r}
 # Kruskal-Wallis testing for reef effect
@@ -1250,16 +1263,28 @@ data.frame("ASV" = intersect(base_control, anti_shared)) %>% left_join(taxa_df, 
 ```
 
 ## Core microbiome analysis
-```{r core_microbiomes}
+```{r core_microbiome_phyloseq}
+# Determine members of the core microbiota with given abundance and prevalences
+core_taxa_standard <- core_members(ps_filtered_rel, detection = 0, prevalence = 0.8)
 # 
-core_taxa_standard <- core_members(ps_filtered_rel, detection = 0, prevalence = 80/100)
+core_taxa_fifty <- core_members(ps_filtered_rel, detection = 0, prevalence = 0.5)
 # 
-core_taxa_fifty <- core_members(ps_filtered_rel, detection = 0, prevalence = 50/100)
+# Filter the phyloseq object to include only core prevalent taxa
+ps_filtered_core_standard <- core(ps_filtered_rel, detection = 0, prevalence = 0.8)
+ps_filtered_core_standard
+# 
+ps_filtered_core_fifty <- core(ps_filtered_rel, detection = 0, prevalence = 0.5)
+ps_filtered_core_fifty
+# phyloseq-class experiment-level object
+# otu_table()   OTU Table:         [ 56 taxa and 166 samples ]
+# sample_data() Sample Data:       [ 166 samples by 11 sample variables ]
+# tax_table()   Taxonomy Table:    [ 56 taxa by 7 taxonomic ranks ]
+# phy_tree()    Phylogenetic Tree: [ 56 tips and 55 internal nodes ]
 # 
 ```
 ```{r core_microbiome_abundance}
-core_abundance_standard <- sample_sums(core(ps_filtered_rel, detection = 0, prevalence = .8))
-core_abundance_fifty <- sample_sums(core(ps_filtered_rel, detection = 0, prevalence = .5))
+core_abundance_standard <- sample_sums(ps_filtered_core_standard)
+core_abundance_fifty <- sample_sums(ps_filtered_core_fifty)
 ```
 ### Plots of core microbiome relative abundance
 ```{r}
@@ -1271,7 +1296,7 @@ core_abundance_df <- data.frame(core_abundance_fifty) %>%
 ```{r}
 core_abundance_df %>% 
   ggplot(aes(Genotype, core_abundance)) +
-  facet_grid(~ mtORF, space = "free", scales = "free") +
+  facet_grid(Treatment ~ mtORF, space = "free", scales = "free_x") +
   geom_boxplot()
 ```
 
@@ -1289,21 +1314,7 @@ sample_data(ps_filtered_rel)
 # 1835 taxa by 7 taxonomic ranks
 ```
 ### Bubble plots of core microbiome ASV relative abundance
-```{r core_microbiome_phyloseq}
-# create phyloseq objects for core microbiome ASVs
-ps_filtered_rel_0.05 <- filter_taxa(ps_filtered_rel, function(x) sum(x) > 0.05, TRUE)
-# 
-ps_filtered_core_standard <- prune_taxa(core_taxa_standard, ps_filtered_rel)
-ps_filtered_core_standard
-# 
-ps_filtered_core_fifty <- prune_taxa(core_taxa_fifty, ps_filtered_rel)
-ps_filtered_core_fifty
-# phyloseq-class experiment-level object
-# otu_table()   OTU Table:         [ 56 taxa and 166 samples ]
-# sample_data() Sample Data:       [ 166 samples by 11 sample variables ]
-# tax_table()   Taxonomy Table:    [ 56 taxa by 7 taxonomic ranks ]
-# phy_tree()    Phylogenetic Tree: [ 56 tips and 55 internal nodes ]
-# 
+```{r sample_asv_data}
 sample_asv_data <- data.frame(otu_table(ps_filtered_rel)) %>% 
   rownames_to_column("Sample_ID") # ps_filtered_core_fifty
 # 
@@ -1317,9 +1328,7 @@ bubble_data_asv <- left_join(sample_metadata, sample_asv_data, by = "Sample_ID")
   arrange(desc(relative_abundance))
 # ps_filtered_rel: 304,610 obs. of 21 variables
 ```
-```{r}
-# bubble_0.01 <-  bubble_data %>% dplyr::filter(relative_abundance > 0.01)
-# bubble_0.05 <-  bubble_data %>% dplyr::filter(relative_abundance > 0.05)
+```{r bubble_data_ASV_core}
 bubble_core_standard <- bubble_data_asv %>%
   dplyr::filter(ASV %in% core_taxa_standard) #%>% 
   # dplyr::filter(Treatment != "Baseline")
@@ -1329,18 +1338,39 @@ bubble_core_fifty <- bubble_data_asv %>%
   # dplyr::filter(Treatment != "Baseline")
 # 
 unique(bubble_core_fifty$Class)
-bubble_core_fifty$Class <- factor(bubble_core_fifty$Class, 
-                                  levels = c(" Alphaproteobacteria", " Gammaproteobacteria", " Desulfovibrionia",
+class_order <- c(" Alphaproteobacteria", " Gammaproteobacteria", " Desulfovibrionia",
                                              " Planctomycetes", " Pla4_lineage",
                                              " Phycisphaerae",
-                                             " Holophagae", " Desulfobacteria",
-                                             " Bdellovibrionia", " Spirochaetia", " Campylobacteria"), 
+                                             " Holophagae",
+                                             " Bdellovibrionia", " Desulfobacteria", " Spirochaetia", " Campylobacteria")
+bubble_core_fifty$Class <- factor(bubble_core_fifty$Class, 
+                                  levels = class_order, 
                                   ordered = TRUE)
 ```
+
 ```{r phylogenetic_tree_test}
+# all ASVs
+ps_filtered_rel %>% plot_tree(color = "Treatment", size = "Abundance", label.tips = "Family")
+# core microbiome ASVs
 ps_filtered_core_fifty %>% plot_tree(color = "Treatment", size = "Abundance", label.tips = "Family")
 ```
 ```{r phylogenetic_tree_change_tip_labels}
+# All ASVs
+ps_tree <- phy_tree(ps_filtered_rel) # ps_filtered_rel
+p <- ggtree(ps_tree)
+# ps_tree$tip.label # tip labels are ASV IDs
+# create data frame with ASV taxonomy information
+taxa_df_rel <- data.frame(tax_table(ps_filtered_rel)) #Genus
+# confirm that data frame rownames match tree tip labels, to prevent misassignment
+all(rownames(taxa_df_rel) == ps_tree$tip.label) 
+# change tip labels on phylogenetic tree
+ps_tree$tip.label <- taxa_df_rel$Family
+p2 <- ggtree(ps_tree) # create phylogenetic tree
+# plot tree test
+p2 + geom_tiplab()
+```
+```{r phylogenetic_tree_change_tip_labels}
+# core microbiome ASVs
 ps_tree <- phy_tree(ps_filtered_core_fifty) # ps_filtered_core_fifty
 p <- ggtree(ps_tree)
 # ps_tree$tip.label # tip labels are ASV IDs
@@ -1349,37 +1379,40 @@ taxa_df_core_fifty <- data.frame(tax_table(ps_filtered_core_fifty)) #Genus
 # confirm that data frame rownames match tree tip labels, to prevent misassignment
 all(rownames(taxa_df_core_fifty) == ps_tree$tip.label) 
 # change tip labels on phylogenetic tree
-ps_tree$tip.label <- taxa_df_core_fifty$Family
+ps_tree$tip.label <- taxa_df_core_fifty$Class
 p2 <- ggtree(ps_tree) # create phylogenetic tree
 # plot tree test
 p2 + geom_tiplab()
 ```
+```{r wgcna_classes_dendrogram}
+# This does not work right now...
+tips <- c("b0a81d828606840739faecf67253a259", "3a6eb9c5c538c7745ce3677db40c9cba", "d4877dd74621c28f1b1e9271e1ff6e3a", "50b050a19ce41aadc068545ce53a8f64", "5e66fbb557569a2267bc202323b61461", "726a599eb8048c779b1e9d85249bfa6d", "bf763a858ed2aa5e61bf06d402ce1542", "4994d5ada2883f43f94aa07302aa6ffe", "ea9f302c8aaadcee80576b34cf4e8131")
+ps_tree_class <- keep.tip(ps_tree, tips)
+
+taxa_short_classes <- taxa_df_core_fifty %>% 
+  rownames_to_column("ASV") %>% 
+  dplyr::filter(ASV %in% tips) %>% 
+  column_to_rownames("ASV")
+# confirm that data frame rownames match tree tip labels, to prevent misassignment
+all(rownames(taxa_short_classes) == ps_tree_class$tip.label) 
+
+# change tip labels on phylogenetic tree
+ps_tree_class$tip.label <- taxa_short_classes$Class
+
+classes_dendrogram <- as.dendrogram.phylo(ps_tree_class)
+ps_tree_class$tip.label
+ggtree(ps_tree_class) + geom_tiplab()
+```
+
 ```{r bubble_colors}
 # 
 colors_classes <- taxa_color_seq(ps_filtered_core_fifty, taxa_rank = "Class")
 ```
-```{r core_asvs_bubbleplot}
-bubble_core_standard$ASV <- factor(bubble_core_standard$ASV, levels = ps_tree$tip.label, ordered = TRUE)
-# 
-bubbleplot <- bubble_core_standard %>% ggplot(aes(x = Sample_ID, y = ASV, fill = Family)) +
-  geom_point(aes(size = relative_abundance*100), alpha = 0.5, shape = 21) +
-  facet_nested(. ~ Treatment + mtORF, scales="free", space="free") +
-  scale_fill_brewer(palette = "Set3") +
-  # scale_y_discrete(limits = levels(ps_tree$tip.label)) +
-  labs(size = "Relative Abundance", fill = "Family") +
-  scale_size_continuous(range = c(1, 10), breaks = c(0.01, 50, 100), limits = c(0.01, 100)) +
-  guides(fill = guide_legend(override.aes = list(size = 4))) +
-  theme(axis.title.x = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        legend.position = "right")
-bubbleplot
-```
 ### Figure 3D
 ```{r figure 3D: manuscript}
-# Bubble plot showing differential effects of antibiotics treatment on bacteria taxa
-pdf("./outputs/figures/Fig3D_bubbleplot_tree_all.pdf", height = 127/25.4, width = 185/25.4)
-bubble_title <- expression(paste("Relative abundance of bacteria ASVs present in at least 50% of ", italic("Pocillopora"), " samples"))
+# Bubble plot showing differential effects of antibiotics treatment on core bacteria taxa
+pdf("./outputs/figures/Fig3D_bubbleplot_tree_all.pdf", height = 133/25.4, width = 175/25.4)
+bubble_title <- expression(paste("Relative abundance of ASVs present in >50% of ", italic("Pocillopora"), " samples"))
 # 
 tree_bubbleplot <- p + 
   # geom_tiplab(size = 2) +
@@ -1387,7 +1420,7 @@ tree_bubbleplot <- p +
              geom = geom_point,
              mapping = aes(x = Sample_ID, y = ASV, fill = Class, size = relative_abundance*100),
              offset = 0.05,
-             pwidth = 5,
+             pwidth = 4,
              # lwd = .05,
              alpha = 0.5,
              shape = 21,
@@ -1404,6 +1437,58 @@ tree_bubbleplot <- p +
   #                    guide = guide_legend(override.aes = list(size = 6, alpha = 0.8))) +
   scale_fill_brewer(palette = "Set3", 
                     guide = guide_legend(override.aes = list(size = 5, alpha = 0.8))) +
+  # scale_fill_manual(values = colors_classes,
+                    # guide = guide_legend(override.aes = list(size = 6, alpha = 0.8))) +
+  labs(size = "Relative Abundance", fill = "Class") +
+  theme(axis.text = element_blank(),
+        plot.title = element_text(hjust = -1.2, size = 12),
+        legend.position = "right",
+        panel.background = element_rect(color = "white", fill = NA)) +
+  ggtitle(bubble_title)
+
+# modify facet strip colors
+strip_colors <- c(treatcolors[1:3])
+  gt <- ggplotGrob(tree_bubbleplot)
+  strip_both <- which(grepl('strip-', gt$layout$name))
+  k <- 1
+  for (i in strip_both) {
+    j <- which(grepl('rect', gt$grobs[[i]]$grobs[[1]]$childrenOrder))
+    gt$grobs[[i]]$grobs[[1]]$children[[j]]$gp$fill <- strip_colors[k]
+    k <- k+1
+  }
+  # # draw gtable object
+  gp <- grid.draw(gt)
+  print(gp)
+dev.off()
+```
+```{r}
+# Bubble plot showing differential effects of antibiotics treatment on all bacteria ASVs
+pdf("./outputs/figures/FigS##_bubbleplot_tree_all_ASVs.pdf", height = 8.5, width = 11)
+bubble_title <- expression(paste("Relative abundance of bacteria ASVs"))
+# 
+tree_bubbleplot <- p + 
+  # geom_tiplab(size = 2) +
+  geom_fruit(data = bubble_data_asv,
+             geom = geom_point,
+             mapping = aes(x = Sample_ID, y = ASV, fill = Class, size = relative_abundance*100),
+             offset = 0.05,
+             pwidth = 5,
+             # lwd = .05,
+             alpha = 0.5,
+             shape = 21,
+             stroke = 0.1,
+             color = "black",
+             axis.params = list(),
+             grid.params = list(vline = FALSE, color = "white"), #  list() if grid lines desired
+             show.legend = FALSE) +
+  facet_grid(. ~ Treatment, scales = "free_x", space = "free", drop = TRUE) +
+  scale_size_continuous(range = c(1, 10), breaks = c(0.1, 50, 100), limits = c(0.01, 100),
+                        labels = c("0.1%", "50%", "100%"),
+                        guide = guide_legend(override.aes = list(fill = "lightgrey", color = "black", alpha = 1))) +
+  # scale_fill_viridis(discrete = T,
+  #                    guide = guide_legend(override.aes = list(size = 6, alpha = 0.8))) +
+  # scale_fill_brewer(palette = "Set3", 
+  #                   guide = guide_legend(override.aes = list(size = 5, alpha = 0.8))) +
   # scale_fill_manual(values = colors_classes,
                     # guide = guide_legend(override.aes = list(size = 6, alpha = 0.8))) +
   labs(size = "Relative Abundance", fill = "Class") +
@@ -1425,6 +1510,7 @@ strip_colors <- c(treatcolors[1:3])
   # # draw gtable object
   gp <- grid.draw(gt)
   print(gp)
+
 dev.off()
 ```
 
@@ -1475,30 +1561,32 @@ sample_asv_data <- data.frame(otu_table(ps_filtered_rel)) %>%
 # 
 colnames(sample_asv_data) <- gsub("^X", "", colnames(sample_asv_data))
 ```
-```{r bacteria_families_WGCNA, message=FALSE}
+```{r bacteria_class_WGCNA, message=FALSE}
 # need to filter to only samples analyzed for transcriptomes
-family_abundances <- ps_filtered_rel %>%
-  subset_samples(., sample_names(ps_filtered_rel) %in% samples$Sample_ID[match(rownames(coldata), samples$Sample_ID)]) %>% 
-  tax_glom(., taxrank = "Family") %>% 
+class_abundances <- ps_filtered_rel %>%
+  subset_samples(., sample_names(ps_filtered_rel) %in% samples_analysis$Sample_ID[match(rownames(coldata), samples_analysis$Sample_ID)]) %>% 
+  tax_glom(., taxrank = "Class") %>% 
   psmelt(.) %>%
-  # filter(Abundance > 0.10) %>% 
-  filter(OTU %in% core_taxa_fifty)
-# If you want to focus on interesting family-level relative abundances
-int_families <- c("Endozoicomonadaceae", "Rhodobacteraceae", "Alteromonadaceae") #"Amoebophilaceae", "Vibrionaceae"
+  # filter(Abundance > 0.001) %>%
+  dplyr::filter(OTU %in% core_taxa_fifty) 
 # 
-family_average_abundances <- family_abundances %>%
+class_average_abundances <- class_abundances %>%
   # filter(Family %in% int_families) %>%
-  group_by(Sample, Family) %>%
-  dplyr::summarise(avg_rel_abundance = mean(Abundance, na.rm = TRUE))
+  group_by(Sample, Class) %>%
+  dplyr::summarise(cum_rel_abundance = sum(Abundance, na.rm = TRUE)) %>%
+  ungroup()
+# This step is complicated because not all families are found across all samples
+# family_average_abundances %>% ungroup() %>% count(Family) %>% View()
 # 
-datTaxa_Family <- family_average_abundances %>% 
-  tidyr::pivot_wider(names_from = Family, values_from = avg_rel_abundance) %>% 
+datTaxa_Class <- class_average_abundances %>% 
+  tidyr::pivot_wider(names_from = Class, values_from = cum_rel_abundance) %>% 
   arrange(Sample) %>%
   # relocate(Endozoicomonadaceae, Rhodobacteraceae, Alteromonadaceae) %>%
   column_to_rownames("Sample") 
 #
-write_csv(datTaxa_Family, path = "./outputs/phyloseq_results/datTaxa_Family.csv")
+write_csv(datTaxa_Class, file = "./outputs/phyloseq_results/datTaxa_Class.csv")
 ```
+
 ```{r}
 # 
 family_average_abundances %>% 
