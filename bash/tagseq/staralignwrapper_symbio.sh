@@ -21,7 +21,7 @@ prodir="/scratch/projects/transcriptomics/mikeconnelly/projects/anti_phys"
 samples=$(cat ${prodir}/data/quantseq_samples.txt ${prodir}/data/quantseq_samples_2.txt)
 
 #lets me know which files are being processed
-echo "These are the reads to be aligned to the Cladocopium and Durusdinium concatenated reference genome: $samples"
+echo "These are the reads to be aligned to the concatenated Symbiodiniaceae reference genome: $samples"
 
 #loop to automate generation of scripts to direct sequence file trimming
 for sample in $samples
@@ -45,10 +45,10 @@ echo ${mcs}/programs/STAR-2.5.3a/bin/Linux_x86_64/STAR \
 --quantMode TranscriptomeSAM \
 --runThreadN 16 \
 --readFilesIn ${prodir}/outputs/STARalign_Pdam/${sample}_PdamUnmapped.out.mate1 \
---genomeDir ${mcs}/sequences/genomes/symbiodiniaceae/STARindex \
+--genomeDir ${mcs}/sequences/genomes/symbiodiniaceae/all_sym/STARindex \
 --sjdbGTFfeatureExon exon \
 --sjdbGTFtagExonParentTranscript Parent \
---sjdbGTFfile  ${mcs}/sequences/genomes/symbiodiniaceae/sym_genomes.gff \
+--sjdbGTFfile  ${mcs}/sequences/genomes/symbiodiniaceae/all_sym/sym_cat_genome.gff \
 --twopassMode Basic \
 --twopass1readsN -1 \
 --outFilterType BySJout \

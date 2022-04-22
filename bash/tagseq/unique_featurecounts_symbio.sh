@@ -32,6 +32,6 @@ done
 
 featureCounts -p -T 8 -t gene \
 -g ID \
--a ${mcs}/sequences/genomes/symbiodiniaceae/sym_genomes.gff \
+-a ${mcs}/sequences/genomes/symbiodiniaceae/all_sym/sym_cat_genome.gff \
 -o ${prodir}/outputs/STARcounts_Symbio/PocAnti_Symbio.counts \
 ${prodir}/outputs/STARalign_Symbio/*uniq.bam
