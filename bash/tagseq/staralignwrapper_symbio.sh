@@ -60,6 +60,7 @@ echo ${mcs}/programs/STAR-2.5.3a/bin/Linux_x86_64/STAR \
 --alignIntronMin 20 \
 --alignIntronMax 1000000 \
 --alignMatesGapMax 1000000 \
+--limitSjdbInsertNsj 3000000 \
 --outSAMattributes NH HI NM MD \
 --outStd Log BAM_Unsorted BAM_Quant \
 --outSAMtype BAM Unsorted SortedByCoordinate \
