@@ -1,14 +1,14 @@
 ---
 title: "HOBO_temperature"
 author: "Mike Connelly"
-date: "5/21/2020"
+date: "4/19/2022"
 output: 
   html_document:
       code_folding: hide
 ---
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir = "~/computing/projects/EAPSI_Pocillopora_AxH/")
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, cache = TRUE)
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
 options(stringsAsFactors = FALSE)
 ```
 ```{r packages}
@@ -16,22 +16,57 @@ library("tidyverse")
 library("tibbletime")
 library("lubridate")
 library("scales")
+#
+library("ggthemes")
+source("./R/ismej_theme.R")
 ```
-```{r hobo_data}
-SystemA <- read.csv("./data/hobo/systemA_noheat.csv", stringsAsFactors = FALSE)
-SystemB <- read.csv("./data/hobo/systemB_heat.csv", stringsAsFactors = FALSE)
+```{r hobo_data, message=T}
+series1 <- read_csv("./data/hobo_temp/Traylor-Knowles_AquariumIncubator_083120-090520.csv",
+                  col_types = cols(
+   `#` = col_double(),
+  `Date Time, GMT-04:00` = col_datetime(format = "%m/%d/%y %H:%M"),
+  `Temp, °C (LGR S/N: 20154173, SEN S/N: 20154173, LBL: Temp.)` = col_double(),
+  `Intensity, Lux (LGR S/N: 20154173, SEN S/N: 20154173, LBL: Lux)` = col_double())) %>% 
+  rename("Date & Time (GMT -4:00)" = `Date Time, GMT-04:00`,
+         "Temp. (°C)" = `Temp, °C (LGR S/N: 20154173, SEN S/N: 20154173, LBL: Temp.)`,
+         "Intensity (Lux)" = `Intensity, Lux (LGR S/N: 20154173, SEN S/N: 20154173, LBL: Lux)`)
+# 
+series2 <- read_csv("./data/hobo_temp/Traylor-Knowles_Microscope_Air_083120-090520.csv",
+                  col_types = cols(
+   `#` = col_double(),
+  `Date Time, GMT-04:00` = col_datetime(format = "%m/%d/%y %H:%M"),
+  `Temp, °C (LGR S/N: 20154171, SEN S/N: 20154171, LBL: Temp.)` = col_double())) %>% 
+  rename("Date & Time (GMT -4:00)" = `Date Time, GMT-04:00`,
+         "Temp. (°C)" = `Temp, °C (LGR S/N: 20154171, SEN S/N: 20154171, LBL: Temp.)`)
 ```
 ```{r tidy_data, echo = FALSE}
-SystemA$system <- rep("control", nrow(SystemA))
-SystemB$system <- rep("heat", nrow(SystemB))
-hobotemp <- rbind(SystemA, SystemB)
-hobotemp <- hobotemp %>% select(-point)
-hobotempdate <- hobotemp %>% select(-Date_Time_GMT.08.00)
-hobotempdate$date <- mdy_hms(hobotemp$Date_Time_GMT.08.00)
-hobotempdate$datetime <- as_datetime(hobotempdate$date)
-hobotempdate$system <- factor(hobotempdate$system, levels = c("control", "heat"), ordered = TRUE)
-hobotempdate <- hobotempdate %>% filter(date > "2017-08-14 12:00:10")
+# 
+temps <- bind_rows(series2, series1,  .id = "series") %>% 
+  mutate("Location" = factor(ifelse(`series` == "1", "Room Air", "Aquarium Incubator"), levels = c("Room Air", "Aquarium Incubator"), ordered = T))
+# 
+temps_expt <- temps %>% filter(`Date & Time (GMT -4:00)` > "2020-08-31 08:00:00") # filter temperatures until after the start of the experiment, baseline samples already collected
 ```
+
+### Supplementary Figure 1E
+```{r f}
+mean_incubator_temp <- mean(temps_expt[temps_expt$series == "2", ]$`Temp. (°C)`)
+hobo_title <- "Microfragment aquarium incubator temperature versus room air temperature "
+
+pdf("./outputs/figures/FigS1E_hobo_temperatures.pdf", width = 6.5, height = 2)
+temps_expt %>% 
+  ggplot(aes(`Date & Time (GMT -4:00)`, `Temp. (°C)`)) + 
+  geom_hline(yintercept = mean_incubator_temp, linetype = "dashed") +
+  geom_line(aes(color = `Location`), size = 1, alpha = 1) +
+  scale_color_manual(values = c("darkgrey", "black"), name = "Location") +
+  scale_y_continuous(limits = c(21,27), breaks = seq(20, 28, 2)) +
+  theme_ismej() +
+    # ggtitle(hobo_title) + 
+    theme(panel.grid.major = element_line(color = "grey92"),
+        panel.grid.minor = element_line(color = "grey92")) 
+dev.off()
+```
+
+
 ```{r temp_graph, echo = FALSE}
 ntempgraph <- hobotempdate %>%
   ggplot(aes(date, temp)) +

@@ -9,6 +9,9 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_knit$set(root.dir = "~/computing/projects/anti_phys")
 ```
+```{r}
+library("microbiomeMarker")
+```
 
 ```{r}
 data("spontaneous_colitis")
@@ -31,19 +34,27 @@ plot_ef_bar(mm, label_level = 1) +
 ```{r}
 ?lefse()
 ```
-```{r}
-sample_data(ps.AxC)
-mm2 <- lefse(ps.AxC, class = "Treatment",
-      multicls_strat = TRUE)
-#
-mm3 <- lefse(ps.AxC, class = "Gulf",
+## Treatment effect variation
+```{r treatment_lefse, message = F}
+sample_data(ps_filtered_samples)
+mm <- lefse(ps_filtered_samples, class = "Treatment",
       multicls_strat = TRUE)
 ```
 ```{r}
-lefse_bar_treatment <- plot_ef_bar(mm2, label_level = 1) +
-  scale_fill_manual(values = c("Control" = treatcolors[2], "Antibiotics" = treatcolors[3]))
+lefse_bar_treatment <- plot_ef_bar(mm, label_level = 1) +
+  scale_fill_manual(values = c("Baseline" = treatcolors[1], "Control" = treatcolors[2], "Antibiotics" = treatcolors[3]))
 lefse_bar_treatment
 ggsave("./outputs/phyloseq_results/figures/lefse_bar_treatment.pdf", height = 30, width = 8.5, units = "in", device = "pdf")
+```
+## Haplotype variation
+```{r haplotype_lefse, message = F}
+mm_haplotype <- lefse(ps_filtered_samples, class = "haplotype",
+      multicls_strat = TRUE)
+```
+```{r}
+lefse_bar_haplotype <- plot_ef_bar(mm, label_level = 1) +
+  scale_fill_manual(values = c("Baseline" = treatcolors[1], "Control" = treatcolors[2], "Antibiotics" = treatcolors[3]))
+lefse_bar_haplotype
 ```
 
 ## Baseline samples genotypic variation
@@ -58,7 +69,6 @@ mm5 <- lefse(ps_baseline, class = "mtORF",
 mm6 <- lefse(ps_baseline, class = "Location",
       multicls_strat = TRUE)
 ```
-
 ```{r}
 lefse_bar_gulf <- plot_ef_bar(mm3, label_level = 1) +
   scale_fill_manual(values = c("Chiriqui" = "orange", "Panama" = "blue"))

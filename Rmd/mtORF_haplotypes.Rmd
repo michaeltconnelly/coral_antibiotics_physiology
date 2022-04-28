@@ -7,7 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir = "/Users/mikeconnelly/computing/projects/anti_phys")
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
 ```
 ```{r packages}
 library("tidyverse")
@@ -21,18 +21,18 @@ genotype_colors <- read_csv("data/genotype_colors.csv") # color names csv corres
 ## RSMAS Pocillopora corals
 ### Import mtORF sequence alignment 
 ```{r import_alignment}
-data <- read.dna("./data/mtorf/mtorf_alignment_828bp_rsmas.fasta", format = "fasta")
+data <- read.dna("./data/mtorf/mtorf_alignment_828bp_rsmas_corrected.fasta", format = "fasta")
 checkAlignment(data)
-#14 sequences, 828 sites
+#14 sequences, 828 sites, no gaps
 # attributes(data)
 # dimnames(data)[[1]]
 ```
 ```{r haplotypes}
 dataHaplo <- haplotype(data)
 dataHaplo
-# 6 unique haplotypes
-  # I  II III  IV   V  VI 
-  # 4   3   1   2   2   2 
+# 5 unique haplotypes
+  # I  II III  IV   V 
+  # 6   3   1   2   2 
 # summary(dataHaplo)
 ```
 ```{r extract haplotypes and build network}
@@ -53,12 +53,12 @@ countHap <- function(hap = h, dna = x){
 }
 ```
 ```{r genotype haplotype matches}
-# df <- as.data.frame(countHap(dataHaplo, data))
-# good <- df %>% filter(Freq == 1)
-# 
-# genotypes <- left_join(genotypes, good, by = "Genotype") %>% 
-#   dplyr::select(-Freq) %>% 
-#   mutate(mtORF = ifelse(haplotype %in% c("II", "IV"), "Type_3", "Type_1"))
+df <- as.data.frame(countHap(dataHaplo, data))
+good <- df %>% filter(Freq == 1)
+
+# genotypes <- left_join(genotypes, good, by = "Genotype") %>%
+#   dplyr::select(-Freq) %>%
+#   dplyr::mutate(mtORF = ifelse(haplotype %in% c("II", "IV"), "Type_3", "Type_1"))
 ```
 ```{r genotype sort and colors}
 genotypes <- genotypes %>% arrange(Genotype, seq_labels)
@@ -74,7 +74,7 @@ plot(dataNet)
 plot(dataNet,
      size = attr(dataNet, "freq"),
      show.mutation = 1,
-     labels = FALSE,
+     labels = T,
      legend = c(-20,20))
 # dev.off()
 ```
@@ -91,7 +91,7 @@ plot(dataNet,
      pie = Geno,
      bg = genocolors$color,
      show.mutation = 1,
-     labels = FALSE,
+     labels = T,
      legend = c(-3,18))
 dev.off()
 ```

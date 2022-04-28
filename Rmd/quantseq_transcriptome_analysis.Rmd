@@ -237,12 +237,17 @@ all(rownames(dds_coral) == rownames(gene_annotation_coral))
 # Add gene feature annotation to DESeqDataSets
 mcols(dds_coral) <- cbind(mcols(dds_coral), gene_annotation_coral)
 # Subset DESeqDataSet
-# Remove genes with counts less than 10 in 90% of samples
-keep <- rowSums(counts(dds_coral) >= 10) > (ncol(countdata_sorted_coral)*0.9) #5,537 genes
+# Option 1: Remove genes with counts less than 10 in 90% of samples
+keep <- rowSums(counts(dds_coral) >= 10) > (ncol(countdata_sorted_coral)*0.9) # 5,537 genes
+# Option 2: Remove genes with mean counts less than 10
+# keep <- rowMeans(counts(dds_coral)) > 10 # 13,479 genes
+# Option 3: Remove genes with mean counts less than 3
+# keep <- rowMeans(counts(dds_coral)) > 3 # 17,150 genes
 dds_coral <- dds_coral[keep, ]
 # Normalize expression data for visualization purposes using VST tranformation
 vsd_coral <- vst(dds_coral, blind = TRUE) # use blind = TRUE to not account for experimental design
 ```
+
 ### *Cladocopium*/*Durusdinium* algal symbiont
 ```{r create_dds_symbiont}
 # # Create full DESeqDataSet
@@ -337,8 +342,8 @@ biplot(pca_vsd,
        encircle = TRUE,
        encircleFill = TRUE,
        showLoadings = TRUE,
-       lab = NULL,
-       # labSize = 2,
+       # lab = pca_vsd$metadata$,
+       labSize = 2, 
        pointSize = 2,
        sizeLoadingsNames = 2) + theme_ismej()
 ```
@@ -524,10 +529,11 @@ partner <- "coral"
 ```
 ```{r genotype_DESeq}
 #First, genotype-specific treatment models
-design(dds) <- formula(~ Sequencing_Round + Treatment)
+design(dds) <- formula(~ Sequencing_Round + Genotype_Treatment)
 #Set control treatment as reference factor level
 dds$Treatment <- factor(dds$Treatment, levels = c("Control", "Antibiotics"))
-dds$Genotype_Treatment <- relevel(dds$Genotype_Treatment, ref = "URA-51.Control")
+dds$Treatment <- relevel(dds$Treatment, ref = "Control")
+# dds$Genotype_Treatment <- relevel(dds$Genotype_Treatment, ref = "URA-51.Control")
 #Perform DESeq2 analysis
 dsr1 <- DESeq(dds)
 resultsNames(dsr1)
@@ -536,13 +542,13 @@ contrasts <- tibble(num = c("Antibiotics"),
                     den = c("Control"))
 # Create tibble with DESeq results for all treatment contrasts for each colony
 DE <- crossing(Genotype = c("PAN-32", "PAN-35", "PAN-39", "PAN-78", "PAN-79", "PAN-83", "URA-51"), contrasts) %>%
-   mutate(dsr = pmap(list(Genotype, num, den), function(x, y, z) {
+   dplyr::mutate(dsr = pmap(list(Genotype, num, den), function(x, y, z) {
    results(dsr1, contrast = c("Genotype_Treatment", paste0(x, ".", c(y, z))))}))
 
 #
 ```
 ```{r}
-res <- results(dsr1, name = "Treatment_Antibiotics_vs_Control")
+res <- results(dsr1, name = "Treatment_Antibiotics_vs_Control", )
 summary(res)
 rownames(res)[res$padj < 0.05]
 
@@ -562,7 +568,7 @@ dds$Treatment <- relevel(dds$Treatment, ref = "Control")
 dsr2 <- DESeq(dds)
 resultsNames(dsr2)
 # Get DESeq results for all treatment contrasts
-DE <- crossing(Colony = "all", contrasts) %>%
+DE <- crossing(Genotype = "all", contrasts) %>%
   mutate(dsr = map2(num, den, ~ results(dsr2, contrast = c("Treatment", .x, .y)))) %>%
   bind_rows(DE)
 ```
@@ -614,15 +620,13 @@ DEtab <- DE %>%
   mutate(nsig = map_dbl(sig, ~ nrow(.)),
          nup = map_dbl(up, ~ nrow(.)),
          ndn = map_dbl(down, ~ nrow(.)),
-         `DEGs [up, down]` = paste0(nsig, " [", nup, ", ", ndn, "]")) %>%
-  mutate(Colony = factor(Colony, levels = c("HW1", "HW2", "WT1", "WT2", "all"), ordered = TRUE),
-         num = factor(num, levels = c("Heat", "Antibiotics", "Antibiotics.Heat"), ordered = TRUE),
-         den = factor(den, levels = c("control", "Heat", "Antibiotics"), ordered = TRUE)) %>%
-  arrange(Colony, num, den) %>% 
-  filter(den == "control") %>% 
+         `DEGs [up, down]` = paste0(nsig, " [", nup, ", ", ndn, "]")) %>% 
+  mutate(Genotype = factor(Genotype, levels = c("PAN-32", "PAN-35", "PAN-39", "PAN-78", "PAN-79", "PAN-83", "URA-51", "all"), ordered = TRUE)) %>%
+  arrange(Genotype, num, den) %>% 
+  filter(den == "Control") %>% 
   mutate("Contrast" = paste0(num, " vs. ", den)) %>% 
-  dplyr::select(Colony, Contrast, `DEGs [up, down]`) %>% 
-  pivot_wider(names_from = Colony, values_from = `DEGs [up, down]`)
+  dplyr::select(Genotype, Contrast, `DEGs [up, down]`) %>% 
+  pivot_wider(names_from = Genotype, values_from = `DEGs [up, down]`)
 ```
 ```{r DE_contrasts_summary_table}
 # Store DE results tables
@@ -639,8 +643,8 @@ DEtab_symbiont <- DEtab
 ```{r Write_significant_results_tables}
 # Write significant DEG results tables to csv files
 DE %>%
-  filter(den == "control") %>%
-  mutate(sig_file_out = paste0(num, "_", den, "_", Colony, "_", partner, "_", "sig", ".csv"),
+  filter(den == "Control") %>%
+  mutate(sig_file_out = paste0(num, "_", den, "_", Genotype, "_", partner, "_", "sig", ".csv"),
          sig_file_out_path = file.path("./outputs/DESeq_results/tables/sig/", sig_file_out),
          data = walk2(sig, sig_file_out_path, write_csv))
 # Write ALL DEG results tables to csv files
@@ -706,8 +710,8 @@ dim(datExpr)
 ```
 ```{r soft_threshold}
 # Find correlation power R^N that satisfies scale free critereon (SFT.R.sq>0.9)
-sft <- pickSoftThreshold(datExpr, verbose=5)
-sft$powerEstimate #4
+sft <- pickSoftThreshold(datExpr, verbose = 1)
+sft$powerEstimate #4 #5
 ```
 ### Step-by-step network construction
 ```{r adjacency_TOM}
@@ -851,13 +855,15 @@ hub_genes <- hub_genes %>%
   dplyr::select(module, ID, Gene_Info) %>% 
   dplyr::rename("hub gene" = ID, "UniProt best match" = Gene_Info) 
 ```
-```{r Table_2}
+### Supplementary Table 3
+```{r Table_S3}
 # hub_genes_coral <- hub_genes
 # hub_genes_symbiont <- hub_genes
 # Bind together coral and symbiont DEG contrast results
 # hub_genes_combined <- bind_rows("Pocillopora" = hub_genes_coral, "Cladocopium" = hub_genes_symbiont, .id = "Holobiont Partner")
 # Write output to file
 write_csv(hub_genes, path = "./outputs/WGCNA_results/hub_genes.csv")
+# write_csv(hub_genes, path = "./outputs/WGCNA_results/Table_S3_hub_genes.csv")
 ```
 ```{r datkME}
 #this section is adapted from Rachel Wright's GitHub: https://github.com/rachelwright8/Ahya-White-Syndromes/
@@ -1265,12 +1271,12 @@ anno_colors <- list(
 col_fun_cor <- colorRamp2(c(1, 0, -1), c("red", "white", "blue"))
 # col_fun_KOG_fisher <- colorRamp2(c(80, 0), c("red", "white"))
 # ComplexHeatmap sample annotations
-sample_annotation <- HeatmapAnnotation(Genotype = samples$Genotype,
-                                       Treatment = samples$Treatment,
-                                       col = anno_colors,
-                                       annotation_name_rot = 0,
-                                       show_legend = FALSE
-                                       )
+# sample_annotation <- HeatmapAnnotation(Genotype = samples$Genotype,
+#                                        Treatment = samples$Treatment,
+#                                        col = anno_colors,
+#                                        annotation_name_rot = 0,
+#                                        show_legend = FALSE
+#                                        )
 # column annotation for treatments, physiology, and bacteria
 treatment_annotation <- HeatmapAnnotation(Treatment = c("Control", "Antibiotics"),
                                           col = anno_colors[1],
@@ -1338,7 +1344,7 @@ for (i in 1:length(moduleTaxaPvalue)){
   textMatrix_taxa[i] <- text
 }
 dim(textMatrix_taxa) <- dim(moduleTaxaCor)
-textMatrix_taxa
+# textMatrix_taxa
 ```
 #### Create individual heatmaps
 ```{r ComplexHeatmap_treatment}
@@ -1505,7 +1511,7 @@ cor_lgd <- Legend(col_fun = col_fun_cor,
          border = "black")
 ```
 ```{r}
-pdf("./outputs/figures/Fig4D_wgcna_complexheatmap.pdf", width = 175/25.4, height = 101.6/25.4)
+pdf("./outputs/figures/Fig4D_wgcna_complexheatmap_option1.pdf", width = 175/25.4, height = 101.6/25.4)
 draw(heatmap_combined,
      ht_gap = unit(2.5, "mm"),
      show_annotation_legend = FALSE, heatmap_legend_side = "left"

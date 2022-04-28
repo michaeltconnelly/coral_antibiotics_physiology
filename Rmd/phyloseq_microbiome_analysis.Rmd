@@ -1281,7 +1281,20 @@ ps_filtered_core_fifty
 # tax_table()   Taxonomy Table:    [ 56 taxa by 7 taxonomic ranks ]
 # phy_tree()    Phylogenetic Tree: [ 56 tips and 55 internal nodes ]
 # 
+
+  dplyr::count(Class) %>% View()
+# 
+phyloseq::otu_table(ps_filtered_core_fifty)
 ```
+### Supplementary Table 2
+```{r}
+core_taxa_fifty_table <- tax_table(ps_filtered_core_fifty) %>% as.data.frame() %>% 
+  rownames_to_column("ASV")
+# 
+write_csv(core_taxa_fifty_table, "./outputs/phyloseq_results/TableS2_core_taxa_fifty_table.csv")
+# 
+```
+
 ```{r core_microbiome_abundance}
 core_abundance_standard <- sample_sums(ps_filtered_core_standard)
 core_abundance_fifty <- sample_sums(ps_filtered_core_fifty)
@@ -1338,6 +1351,7 @@ bubble_core_fifty <- bubble_data_asv %>%
   # dplyr::filter(Treatment != "Baseline")
 # 
 unique(bubble_core_fifty$Class)
+unique(bubble_core_fifty$Family)
 class_order <- c(" Alphaproteobacteria", " Gammaproteobacteria", " Desulfovibrionia",
                                              " Planctomycetes", " Pla4_lineage",
                                              " Phycisphaerae",
