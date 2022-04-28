@@ -46,7 +46,7 @@ echo "bowtie2 \
 -U ${prodir}/outputs/STARalign_Pdam/${sample}_PdamUnmapped.out.mate1 \
 --local \
 -p 8 \
--S ${prodir}/outputs/symABCD/${study}/${sample}_symABCD.sam" >> "${prodir}"/bash/jobs/"${sample}"_symalign_ABCD.job
+-S ${prodir}/outputs/symABCD/${sample}_symABCD.sam" >> "${prodir}"/bash/jobs/"${sample}"_symalign_ABCD.job
 
 #lets me know file is done
 echo 'echo' "Bowtie alignment of $sample complete" >> "${prodir}"/bash/jobs/"${sample}"_symalign_ABCD.job
