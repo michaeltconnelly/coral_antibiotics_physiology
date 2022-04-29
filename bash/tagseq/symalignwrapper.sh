@@ -30,7 +30,7 @@ echo "Aligning ${sample}"
 
 #   input BSUB commands
 echo '#!/bin/bash' > "${prodir}"/bash/jobs/"${sample}"_symalign_ABCD.job
-echo '#BSUB -q bigmem' >> "${prodir}"/bash/jobs/"${sample}"_symalign_ABCD.job
+echo '#BSUB -q general' >> "${prodir}"/bash/jobs/"${sample}"_symalign_ABCD.job
 echo '#BSUB -J '"${sample}"_staralign_symbio'' >> "${prodir}"/bash/jobs/"${sample}"_symalign_ABCD.job
 echo '#BSUB -o '"${prodir}"/outputs/logfiles/"$sample"staralign_symbio%J.out'' >> "${prodir}"/bash/jobs/"${sample}"_symalign_ABCD.job
 echo '#BSUB -e '"${prodir}"/outputs/errorfiles/"$sample"staralign_symbio%J.err'' >> "${prodir}"/bash/jobs/"${sample}"_symalign_ABCD.job
