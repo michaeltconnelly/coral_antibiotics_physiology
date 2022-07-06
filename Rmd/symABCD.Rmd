@@ -1,0 +1,52 @@
+---
+title: "symABCD"
+author: "Mike Connelly"
+date: "4/28/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+options(stringsAsFactors = FALSE)
+```
+
+```{r}
+read_tsv("./outputs/allcounts_symABCD.txt")
+```
+
+
+```{r}
+library(tidyverse) # for data wrangling and plotting
+library(RColorBrewer) # for colors
+```
+
+Plot the proportion of reads mapping to A, B, C, and D in Pocillopora corals
+
+```{r}
+abcd_pdam <- read.delim("./outputs/allcounts_symABCD.txt")
+
+df_abcd_pdam <- abcd_pdam %>% 
+  dplyr::select(sample, fracA, fracB, fracC, fracD) %>% 
+  gather(clade, frac, fracA:fracD) %>% 
+  dplyr::mutate(Sample_ID = str_extract(sample, "^.*_.*_[[:digit:]]{3}")) %>%
+  dplyr::mutate(Sample_ID = str_replace(Sample_ID, "PAN-5", "PAN-05")) %>% 
+  dplyr::left_join(samples_success, by = "Sample_ID")
+
+plot_abcd_pdam <- df_abcd_pdam %>% 
+  ggplot() + 
+  geom_bar(aes(y = frac, x = sample, fill = clade), stat="identity")+
+  facet_wrap(~Genotype, scales = "free") +
+  scale_fill_brewer(palette="Spectral")+
+  theme_classic()+
+  ylab("Proportion of Symbiont Reads")+
+  xlab("Pocillopora Samples")+
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+```
+```{r}
+pdf("./outputs/figures/pocillopora_symbiont_proportions.pdf", width = 6.5, height = 6.5)
+print(plot_abcd_pdam)
+dev.off()
+```
+## Scatterpie plot
