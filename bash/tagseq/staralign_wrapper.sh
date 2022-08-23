@@ -66,7 +66,6 @@ echo "${mcs}/programs/STAR-2.7.9a/bin/Linux_x86_64/STAR \
 #
 #lets me know file is done
 echo 'echo' "STAR alignment of $sample complete"'' >> ${prodir}/bash/jobs/${sample}_staralign_pdam.job
-echo "STAR alignment script of $sample submitted"
 echo 'echo = `date` job $JOB_NAME done' >> ${prodir}/bash/jobs/${sample}_staralign_pdam.job
 #   submit generated trimming script to job queue
 qsub ${prodir}/bash/jobs/${sample}_staralign_pdam.job
