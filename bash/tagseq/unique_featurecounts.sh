@@ -29,13 +29,13 @@ prodir="/scratch/nmnh_corals/connellym/projects/anti_phys"
 files=$(ls /scratch/nmnh_corals/connellym/projects/anti_phys/data/quantseq_reads/)
 samples=$(echo "$files" | cut -d . -f 1 | sort -u)
 
-for sample in $samples ; do
-samtools index ${prodir}/outputs/STARalign_Pdam/${sample}_Pdam_Aligned.sortedByCoord.out.bam
-samtools view -q 255 -Sub ${prodir}/outputs/STARalign_Pdam/${sample}_Pdam_Aligned.sortedByCoord.out.bam \
--o ${prodir}/outputs/STARalign_Pdam/${sample}_Aligned.sortedByCoord.out.uniq.bam
-done
+#for sample in $samples ; do
+#samtools index ${prodir}/outputs/STARalign_Pdam/${sample}_Pdam_Aligned.sortedByCoord.out.bam
+#samtools view -q 255 -Sub ${prodir}/outputs/STARalign_Pdam/${sample}_Pdam_Aligned.sortedByCoord.out.bam \
+#-o ${prodir}/outputs/STARalign_Pdam/${sample}_Aligned.sortedByCoord.out.uniq.bam
+#done
 
-${mcs}/programs/subread-2.0.3-source/bin/featureCounts -p -T 8 -t gene \
+${mcs}/programs/subread-2.0.3-source/bin/featureCounts -T $NSLOTS -t gene \
 -g ID \
 -a /home/connellym/sequences/pdam_annotation.gff3 \
 -o ${prodir}/outputs/STARcounts_Pdam/PocAnti_Pdam.counts \
