@@ -125,7 +125,7 @@ java -jar /share/apps/bioinformatics/gatk/3.8.1.0/GenomeAnalysisTK.jar \
 --variant ${dir}/URA-51_Control_098_Pdam.g.vcf.gz \
 --variant ${dir}/URA-51_Control_099_Pdam.g.vcf.gz \
 --variant ${dir}/URA-51_Control_100_Pdam.g.vcf.gz \ \
---out ${dir}/outputs/phylotrans_Pdam/samples_all.g.vcf.gz
+--out ${prodir}/outputs/phylotrans_Pdam/samples_all.g.vcf.gz
 #
 echo = `date` job $JOB_NAME done
 #
