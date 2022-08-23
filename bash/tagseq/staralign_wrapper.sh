@@ -26,7 +26,7 @@ echo "#$  -S /bin/sh
 #$ -l mres=64G,h_data=4G,h_vmem=4G" >> ${prodir}/bash/jobs/${sample}_staralign_pdam.job
 echo "#$ -j y
 #$ -N staralign_${sample}
-#$ -o ${prodir}/bash/jobs/staralign_${sample}.log
+#$ -o ${prodir}/bash/jobs/${sample}_staralign_pdam.log
 #$ -m bea
 #$ -M connellym@si.edu" >> ${prodir}/bash/jobs/${sample}_staralign_pdam.job
 #
@@ -43,7 +43,7 @@ echo "${mcs}/programs/STAR-2.7.9a/bin/Linux_x86_64/STAR \
 --quantMode TranscriptomeSAM \
 --runThreadN 16 \
 --readFilesIn ${prodir}/outputs/trimmed_reads/${sample}_trimmed.fastq \
---genomeDir ${mcs}/sequences/genomes/coral/pocillopora/STARindex \
+--genomeDir /home/connellym/sequences/STARidx_pdam \
 --sjdbGTFfeatureExon exon \
 --sjdbGTFtagExonParentTranscript Parent \
 --sjdbGTFfile  ${mcs}/sequences/genomes/coral/pocillopora/pdam_genome.gff \
