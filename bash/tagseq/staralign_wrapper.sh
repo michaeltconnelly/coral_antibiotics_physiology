@@ -62,7 +62,7 @@ echo "${mcs}/programs/STAR-2.7.9a/bin/Linux_x86_64/STAR \
 --outStd Log BAM_Unsorted BAM_Quant \
 --outSAMtype BAM Unsorted SortedByCoordinate \
 --outReadsUnmapped Fastx \
---outFileNamePrefix ${prodir}/outputs/STARalign_Pdam/${sample}_Pdam" >> ${prodir}/bash/jobs/${sample}_staralign_pdam.job
+--outFileNamePrefix ${prodir}/outputs/STARalign_Pdam/${sample}_Pdam_" >> ${prodir}/bash/jobs/${sample}_staralign_pdam.job
 #
 #lets me know file is done
 echo 'echo' "STAR alignment of $sample complete"'' >> ${prodir}/bash/jobs/${sample}_staralign_pdam.job
