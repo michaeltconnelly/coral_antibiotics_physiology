@@ -30,7 +30,7 @@ files=$(ls /scratch/nmnh_corals/connellym/projects/anti_phys/data/quantseq_reads
 samples=$(echo "$files" | cut -d . -f 1 | sort -u)
 
 for sample in $samples ; do
-samtools index ${prodir}/outputs/alignments/${sample}_Aligned.sortedByCoord.out.bam
+samtools index ${prodir}/outputs/STARalign_Pdam/${sample}_Aligned.sortedByCoord.out.bam
 samtools view -q 255 -Sub ${prodir}/outputs/STARalign_Pdam/${samp}_PdamAligned.sortedByCoord.out.bam \
 -o ${prodir}/outputs/STARalign_Pdam/${sample}_Aligned.sortedByCoord.out.uniq.bam
 done
