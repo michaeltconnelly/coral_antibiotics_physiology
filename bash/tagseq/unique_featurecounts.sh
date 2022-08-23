@@ -6,7 +6,7 @@
 #$ -l mres=64G,h_data=4G,h_vmem=4G
 #$ -j y
 #$ -N unique_featurecounts
-#$ -o ${prodir}/bash/jobs/unique_featurecounts.log
+#$ -o /scratch/nmnh_corals/connellym/projects/anti_phys/bash/jobs/unique_featurecounts.log
 #$ -m bea
 #$ -M connellym@si.edu
 #
