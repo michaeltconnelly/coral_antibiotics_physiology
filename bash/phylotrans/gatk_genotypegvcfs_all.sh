@@ -7,7 +7,7 @@
 #$ -cwd
 #$ -j y
 #$ -N gatk_genotypegvcfs_all
-#$ -o gatk_genotypegvcfs_all.log
+#$ -o /scratch/nmnh_corals/connellym/projects/anti_phys/bash/jobs/gatk_genotypegvcfs_all.log
 #$ -m bea
 #$ -M connellym@si.edu
 #

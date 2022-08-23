@@ -25,7 +25,7 @@ java -jar /share/apps/bioinformatics/gatk/3.8.1.0/GenomeAnalysisTK.jar \
 -T CombineGVCFs \
 -R /home/connellym/sequences/pdam_scaffolds.fasta \
 --variant ${dir}/PAN-05_Baseline_001_R1_Pdam.g.vcf.gz \
---variant ${dir}/PAN-10_Baseline_007_R1_Pdam.g.vcf.gz
+--variant ${dir}/PAN-10_Baseline_007_R1_Pdam.g.vcf.gz \
 --variant ${dir}/PAN-10_Control_061_R1_Pdam.g.vcf.gz \
 --variant ${dir}/PAN-10_Control_062_R1_Pdam.g.vcf.gz \
 --variant ${dir}/PAN-10_Control_064_R1_Pdam.g.vcf.gz \
@@ -125,7 +125,7 @@ java -jar /share/apps/bioinformatics/gatk/3.8.1.0/GenomeAnalysisTK.jar \
 --variant ${dir}/URA-51_Control_098_Pdam.g.vcf.gz \
 --variant ${dir}/URA-51_Control_099_Pdam.g.vcf.gz \
 --variant ${dir}/URA-51_Control_100_Pdam.g.vcf.gz \ \
---out ${prodir}/outputs/phylotrans_Pdam/samples_all.g.vcf.gz
+--out ${dir}/outputs/phylotrans_Pdam/samples_all.g.vcf.gz
 #
 echo = `date` job $JOB_NAME done
 #
