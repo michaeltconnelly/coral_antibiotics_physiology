@@ -5,8 +5,8 @@
 #bsub -P transcriptomics < ./bash/tagseq/readtrimming_wrapper.sh
 
 #specify variable containing sequence file prefixes and directory paths
-mcs="/scratch/projects/transcriptomics/mikeconnelly"
-prodir="/scratch/projects/transcriptomics/mikeconnelly/projects/anti_phys"
+mcs="/scratch/nmnh_corals/connellym"
+prodir="/scratch/nmnh_corals/connellym/projects/anti_phys"
 
 # making a list of sample names
 samples=$(cat ${prodir}/data/quantseq_samples.txt ${prodir}/data/quantseq_samples_2.txt)
