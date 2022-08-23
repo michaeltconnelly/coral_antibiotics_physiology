@@ -9,7 +9,9 @@ mcs="/scratch/nmnh_corals/connellym"
 prodir="/scratch/nmnh_corals/connellym/projects/anti_phys"
 
 # making a list of sample names
-samples=$(cat ${prodir}/data/quantseq_samples.txt ${prodir}/data/quantseq_samples_2.txt)
+files=$(ls /scratch/nmnh_corals/connellym/projects/anti_phys/data/quantseq_reads/)
+samples=$(echo "$files" | cut -d . -f 1 | sort -u)
+#samples=$(cat ${prodir}/data/quantseq_samples.txt ${prodir}/data/quantseq_samples_2.txt)
 
 #lets me know which files are being processed
 echo "These are the samples to be trimmed:"
@@ -64,5 +66,7 @@ minlength=20' >> ${prodir}/bash/jobs/${sample}_trim.job
 echo 'echo '${sample}' successfully trimmed' >> "${prodir}"/bash/jobs/${sample}_trim.job
 #
 echo 'echo = `date` job $JOB_NAME done' >> ${prodir}/bash/jobs/${sample}_trim.job
-#qsub ${prodir}/bash/jobs/${sample}_trim.job
+# submit job
+qsub ${prodir}/bash/jobs/${sample}_trim.job
+#
 done
