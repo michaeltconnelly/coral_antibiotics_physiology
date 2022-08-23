@@ -1,8 +1,6 @@
 #!/bin/bash
 #./bash/tagseq/readtrimming_wrapper.sh
 #purpose: create wrapper scripts for read trimming using bbduk from BBtools suite
-#To start this job from the anti_phys directory, use:
-#bsub -P transcriptomics < ./bash/tagseq/readtrimming_wrapper.sh
 
 #specify variable containing sequence file prefixes and directory paths
 mcs="/scratch/nmnh_corals/connellym"
@@ -29,7 +27,7 @@ echo "#$  -S /bin/sh
 #$ -q sThC.q
 #$ -l mres=64G,h_data=4G,h_vmem=4G" >> ${prodir}/bash/jobs/${sample}_trim.job
 echo "#$ -j y
-#$ -N trimmomatic_${sample}
+#$ -N trimming_${sample}
 #$ -o ${prodir}/bash/jobs/${sample}_trim.log
 #$ -m bea
 #$ -M connellym@si.edu" >> ${prodir}/bash/jobs/${sample}_trim.job
