@@ -46,7 +46,7 @@ echo "${mcs}/programs/STAR-2.7.9a/bin/Linux_x86_64/STAR \
 --genomeDir /home/connellym/sequences/STARidx_pdam \
 --sjdbGTFfeatureExon exon \
 --sjdbGTFtagExonParentTranscript Parent \
---sjdbGTFfile  ${mcs}/sequences/genomes/coral/pocillopora/pdam_genome.gff \
+--sjdbGTFfile /home/connellym/sequences/pdam_annotation.gff3 \
 --twopassMode Basic \
 --twopass1readsN -1 \
 --outFilterType BySJout \
