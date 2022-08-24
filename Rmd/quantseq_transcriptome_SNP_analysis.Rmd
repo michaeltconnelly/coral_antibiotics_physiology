@@ -1,0 +1,382 @@
+---
+title: "quantseq_transcriptome_SNP_analysis"
+author: "Mike Connelly"
+date: "08/24/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+```
+
+## Setup packages and working directories
+```{r}
+library("vcfR")
+library("tidyverse")
+library("adegenet")
+library("ggrepel")
+#
+library("extrafont")
+library("extrafontdb")
+```
+```{r colors}
+### Set overall theme, colors, and shapes for ggplot2
+# colors for experimental treatments
+treatcolors <- c("lightblue", "dodgerblue", "firebrick1")
+shapes <- c(15:20) # may be useful for genotype variables: Gulf, Location, mtORF, symbiont, etc.
+# colors for genotypes
+genotype_colors <- read_csv("data/genotype_colors.csv") #%>%
+  # dplyr::filter(Genotype %in% c("PAN-78", "PAN-79", "PAN-83"))# color names csv corresponding to excel sheet colors
+genocolors <- c(genotype_colors$color) 
+# default ggplot fill
+gg_color_hue <- function(n) {
+  hues = seq(15, 375, length = n + 1)
+  hcl(h = hues, l = 65, c = 100)[1:n]
+}
+genocolors <- gg_color_hue(14)
+```
+```{r theme}
+theme_set(theme_ismej())
+```
+
+## Import sample metadata
+```{r genotypes_fragments}
+genotypes <- read_csv("data/genotypes.csv")
+#
+fragments <- read_csv("data/fragments.csv", col_types = cols(
+  Fragment_ID = col_character()))
+```
+```{r factors}
+# factor levels
+treatment_levels <- c("Baseline", "Control", "Antibiotics")
+sampling_levels <- c("Day 0", "Day 7")
+genotype_levels <- c("PAN-05", "PAN-10", "PAN-32", "PAN-34", "PAN-35", "PAN-37", "PAN-39", "PAN-41", "PAN-43","PAN-44", "PAN-78", "PAN-79", "PAN-83", "URA-51", NA)
+gulf_levels <- c("Chiriqui", "Panama")
+loc_levels <- c("Uva", "Saboga", "Uraba")
+mtorf_levels <- c("Type_1", "Type_3")
+sym_levels <- c("C1bc", "C1d", "D1")
+genus_levels <- c("Cladocopium", "Durusdinium")
+```
+```{r  sample_data, echo=TRUE}
+# Import sample metadata 
+sample_metadata <- read_delim("./data/quantseq_metadata.tsv", delim ="\t", col_names = c("Sample_ID", "Genotype", "Treatment", "Sampling_Time", "Sequencing_Success", "Sequencing_Round", "Include_Analysis"), comment = "#")#, row.names = 1, header = FALSE)
+# join with genotype metadata
+sample_metadata <- sample_metadata %>% left_join(genotypes, by = "Genotype")
+# Set factor orders
+# sample_metadata$Genotype <- factor(sample_metadata$Genotype, levels = genotype_levels, ordered = TRUE)
+# sample_metadata$Treatment <- factor(sample_metadata$Treatment, levels = treatment_levels, ordered = TRUE)
+sample_metadata$Gulf <- factor(sample_metadata$Gulf, levels = gulf_levels, ordered = TRUE)
+sample_metadata$Location <- factor(sample_metadata$Location, levels = loc_levels, ordered = TRUE)
+sample_metadata$mtORF <- factor(sample_metadata$mtORF, levels = mtorf_levels, ordered = TRUE)
+sample_metadata$ITS2 <- factor(sample_metadata$ITS2, levels = sym_levels, ordered = TRUE)
+sample_metadata$Symbiont_Genus <- ifelse(sample_metadata$ITS2 == "D1", "Durusdinium", "Cladocopium")
+# Create analysis-compatible sample map
+samples_success <- sample_metadata %>%
+  dplyr::filter(Sequencing_Success == T)
+```
+
+```{r}
+# pdam_genome <- ape::read.dna("/Users/mikeconnelly/computing/sequences/genomes/coral/pocillopora/pdam/pdam_genome.fasta", format = "fasta")
+# pdam_gff <- read.table("/Users/mikeconnelly/computing/sequences/genomes/coral/pocillopora/pdam/pdam_genome.gff", sep="\t", quote="")
+```
+
+## Import VCF file
+```{r imporf vcf}
+vcf_meta <- vcfR::read.vcfR(file = "./outputs/tagseq/samples_all_filtered_primary.vcf")
+```
+```{r}
+# subset to top-aligned samples in each genotype
+vcf_meta
+vcf_meta[is.biallelic(vcf_meta), 1:8]
+ top_samples 
+vcf_meta[, 1] 
+```
+
+## Convert to GENIND object
+```{r genind convert}
+genind_meta <- vcfR2genind(vcf_meta)
+# class(genind_meta)
+genind_meta
+```
+```{r genind summary}
+# genind_summary_meta <- summary(genind_meta)
+```
+
+## PCA
+```{r pca}
+# 
+x_meta <- tab(genind_meta, freq = TRUE, NA.method = "mean")
+# 
+pca_meta <- dudi.pca(x_meta, center = TRUE, scale = FALSE, scannf = FALSE, nf = 216)
+# ?dudi.pca()
+```
+```{r pca plot check}
+s.label(pca_meta$li, xax=1, yax=2)
+```
+
+## Figure 5
+```{r}
+pca_df <- pca_meta$li %>%
+  rownames_to_column("Sample_ID") %>% 
+  dplyr::mutate(Sample_ID = str_replace(`Sample_ID`, "_R1$", "")) %>% 
+  dplyr::right_join(samples_success, by = "Sample_ID")
+#
+# pca_df$Study <- factor(pca_df$Study, levels = study_levels, ordered = TRUE)
+```
+```{r PC_vars}
+pc1lab <- paste("PC1: ", round(pca_meta$eig[1]/sum(pca_meta$eig)*100, 2), "%", sep = "")
+pc2lab <- paste("PC2: ", round(pca_meta$eig[2]/sum(pca_meta$eig)*100, 2), "%", sep = "")
+```
+```{r}
+# Figure 5 
+pca_title <- expression(paste("PCA of phylotranscriptomic SNPs"))
+# pdf("./outputs/figures/Fig5_VCF_SNPs_pca_select_thin.pdf", height = 7.5, width = 9)
+pca_df %>%
+  ggplot(., aes(Axis1, Axis2)) +
+  geom_point(aes(fill = Genotype, shape = mtORF), size = 4, alpha = 0.8, stroke = 0.5, color = "black") +
+  stat_ellipse(aes(color = mtORF), show.legend = FALSE) +
+  # geom_text_repel(aes(label = Sample_ID), size = 2, max.overlaps = 100)
+  scale_fill_manual(values = genocolors,
+                    guide = guide_legend(override.aes = list(size = 6, shape = 21, fill = genocolors),
+                                         nrow = 8, title.position = "top")) +
+  scale_color_manual(values = c("darkorange1","turquoise2")) +
+  scale_shape_manual(values = c(21,23),
+                     guide = guide_legend(override.aes = list(size = 6, alpha = 0.8, stroke = 0.5, fill = "black"),
+                                          nrow = 4, title.position = "top")) +
+  coord_fixed(13.74/26.39) +
+  theme_bw() +
+  theme(
+    # plot.title = element_text(size = 28),
+    #     axis.title = element_text(size = 24),
+    #     axis.text = element_blank(),
+    #     legend.title = element_text(size = 24),
+    #     legend.text = element_text(size = 20),
+        legend.position = "bottom",
+        legend.spacing.y = unit(0.15, "in")) +
+  xlab(pc1lab) + ylab(pc2lab) +
+  ggtitle(pca_title)
+# dev.off()
+```
+
+## Find clusters in data
+```{r}
+# Find clusters
+# grp_meta <- find.clusters(genind_meta, max.n.clust = 100, n.pca = 300)
+# All PCs retained, 37 clusters identified
+# small subset
+grp_meta <- find.clusters(genind_meta, max.n.clust = 40, n.pca = 120)
+# All PCs retained, 4 clusters identified
+```
+```{r}
+pdf("./outputs/adegenet/pca_find-clusters.pdf", height = 5, width = 6)
+grp_meta <- find.clusters(genind_meta, max.n.clust = 40, n.pca = 41)
+dev.off()
+```
+```{r}
+# Inspect output of find.clusters
+grp_meta$Kstat
+grp_meta$stat
+grp_meta$grp
+grp_meta$size
+```
+## DAPC
+```{r dapc_optimization}
+# However, unlike k-means, DAPC can benefit from not using too many PCs. Indeed, retaining too many components with respect to the number of individuals can lead to over-fitting and unstability in the membership probabilities returned by the method
+# How many PCs should be kept?
+dapcopt <- dapc(genind_meta, grp_meta$grp, n.da = 1, n.pca = 30)
+# 
+optim.a.score(dapcopt, n.sim = 100)
+
+# For small number of clusters, all eigenvalues can be retained since all discriminant functions can be examined without difficulty. Whenever more (say, tens of) clusters are analysed, it is likely that the first few dimensions will carry more information than the others, and only those can then be retained and interpreted.
+
+# The trade-off between power of discrimination and over-fitting can be measured by the a- score, which is simply the difference between the proportion of successful reassignment of the analysis (observed discrimination) and values obtained using random groups (random discrimination).
+
+# Retaining 6 PC's gives highest a-score (0.726) and utilizes 73.4% of the cumulative variance. Therefore, let's use 6 PC's for the DA. 
+```
+
+```{r}
+# Run the analysis on the dataset using the previously inferred groups
+dapc_meta <- dapc(genind_meta, grp_meta$grp)
+```
+```{r}
+# Inspect output of dapc
+dapc_meta
+dapc_meta$n.pca
+dapc_meta$n.da
+dapc_meta$tab
+dapc_meta$var
+```
+```{r}
+scatter(dapc_meta)
+```
+```{r}
+# pdf("./outputs/adegenet/dapc_all.pdf")
+scatter(dapc_meta,
+         scree.da=TRUE,  posi.da="bottomright",
+         scree.pca=TRUE, posi.pca="bottomleft",
+         bg="white", pch=20,  cell=0, cstar=0,
+        cex=3,clab=0, leg=TRUE, txt.leg=paste("Cluster",1:5)) 
+# dev.off()
+```
+```{r}
+scatter(dapc_meta, 1, 1, bg="white",
+        scree.da=FALSE, legend=TRUE, solid=.4)
+```
+```{r}
+scatter(dapc_meta, 2, 2, bg="white",
+        scree.da=FALSE, legend=TRUE, solid=.4)
+```
+
+```{r}
+# Add DAPC cluster group information to samples data frame
+samples_grp <- data.frame("Sample_ID" = names(grp_meta$grp), "Group" = unname(grp_meta$grp)) %>% 
+  dplyr::mutate(Sample_ID = str_replace(`Sample_ID`, "_1$", ""))
+# 
+samples_keep <- samples %>% 
+  filter(Sample_ID %in% samples_grp$Sample_ID) %>% 
+  left_join(samples_grp) %>% 
+  arrange(Sample_ID)
+# 
+# write_csv(samples_keep, "~/Desktop/samples_keep.csv")
+# write_csv(samples_grp, "~/Desktop/samples_grp.csv")
+```
+### Figure 2
+```{r}
+dapc_meta_df <- tibble(SampleID = rownames(dapc_meta$ind.coord),
+               grp = dapc_meta$grp,
+               LD1 = dapc_meta$ind.coord[,1],
+               LD2 = dapc_meta$ind.coord[,2])
+#
+dapc_meta_df_1 <- dapc_meta_df %>%
+  group_by(grp) %>%
+  summarize(c1 = mean(LD1),
+            c2 = mean(LD2)) %>% 
+  full_join(dapc_meta_df)
+```
+```{r dapc_spider}
+# pdf("./outputs/figures/dapc_scatterplot_filtered_snapp.pdf", width = 5.67, height = 3.5)
+# 
+dapc_title <- expression(paste("DAPC of ", italic("Pocillopora"), " SNPs"))
+  # 
+xlab <- paste("LD1 (", round(dapc_meta$eig[1]/sum(dapc_meta$eig)*100, digits = 1), "%)", sep = "")
+ylab <- paste("LD2 (", round(dapc_meta$eig[2]/sum(dapc_meta$eig)*100, digits = 1), "%)", sep = "")
+
+# Plot with spiders
+dapc.fig <- 
+  dapc_meta_df_1 %>% 
+  ggplot(., aes(fill = grp)) +
+  #sample-centroid spiders paths
+  stat_ellipse(aes(x = LD1, y = LD2, group = grp, color = grp)) +
+  geom_segment(mapping = aes(x = LD1, y = LD2, xend = c1, yend = c2), lwd = 0.25, col = "dark grey") +
+  #group centroid points
+  # geom_point(aes(x = c1, y = c2, color = grp), size = 1, fill = NULL, shape = 21, stroke = 2, show.legend = TRUE) +
+  # sample points
+  geom_point(aes(x = LD1, y = LD2, fill = grp), color = "black", shape = 21, size = 3, alpha = 0.8, show.legend = TRUE) +
+  scale_color_manual(name = "Group", values = seasun(5)) +
+  # scale_shape_manual(name = "Gulf", values = c(21,23)) +
+  scale_fill_manual(name = "Group", values = seasun(5)) +
+  # guides(shape = guide_legend(override.aes = list(shape = colshapes))) +
+  theme_bw() +
+  # theme(plot.margin = unit(c(-0.5, -0.5, 0.5, 0.5), "cm")) +
+ guides(shape = guide_legend(override.aes = list(fill = "black", shape = 21, size = 4, alpha = 1))) +
+  labs(x = xlab, y = ylab) +
+  ggtitle(dapc_title)
+#
+print(dapc.fig)
+#
+# dev.off()
+```
+```{r dapc_plot}
+xplot <- 
+  ggdensity(dapc, x = "LD1", fill = "Group", lwd = 0.5,
+            palette = groupcolors) +
+  clean_theme() + rremove("legend") +
+  theme(plot.margin = unit(c(0.0, 0, -0.1, 0), "cm"))
+#ggplot(dapc, aes(x = LD1, fill = grp)) + geom_density(alpha = 0.5, adjust = 1)
+# xplot
+
+yplot <- 
+  ggdensity(dapc, x = "LD2", fill = "Treatment", lwd = 0.5,
+            palette = condcolors_AxH) +
+  clean_theme() + rremove("legend") + 
+  theme(plot.margin = unit(c(0, 0.0, 0, -0.1), "cm")) + ggpubr::rotate()
+# yplot
+
+dapcplot <- plot_grid(xplot, NULL, dapc.fig, yplot,
+                      nrow = 2, ncol = 2,
+                      align = "hv",
+                      #axis = "tblr",
+                      rel_widths = c(3, 1),
+                      rel_heights = c(1, 3),
+                      greedy = FALSE)
+dapcplot
+# ggsave(filename = "./manuscript_figures/Fig2_DAPC.pdf", plot = dapcplot, width = 120, height = 115, units = "mm", device = "pdf")
+# The DAPC clearly shows two distinct axes of stress responses among the antibiotics, heat stress, and combined stressors. 
+# The first linear discriminant function (LD1) separates antibiotics-treated fragments from non-treated fragments in the control and heat stress treatments.
+# The second linear discriminant function (LD2) separates heat-stressed fragments from ambient temperature fragments in the control and antibiotics treatments.
+```
+
+
+```{r}
+samples_keep %>%
+  group_by(Group) %>%
+  dplyr::count() %>% 
+  ggplot(aes(Group, n)) + geom_col()
+  
+samples_keep %>%
+  ggplot(aes(Group)) +
+  geom_bar(aes(fill = Genotype), color = "black") + #, position = "fill"
+  facet_grid(Species ~ ., space = "free", switch = "y")
+```
+
+
+### DAPC variable contributions
+```{r}
+contrib <- loadingplot(dapc_meta$var.contr, axis=2,
+                       thres=.07, lab.jitter=1)
+# 
+dapc_loadings <- data.frame(dapc_meta$var.contr) %>% 
+  arrange(desc(LD1))
+```
+
+### Interpreting group memberships
+```{r}
+pdf("./outputs/figures_VCF_SNP_assignplot.pdf", width = 8.5, height = 11)
+par(mar=c(4,10,4,4))
+# summary(dapc_meta)
+assignplot(dapc_meta)
+dev.off()
+```
+```{r}
+compoplot(dapc_meta, posi="bottomright",
+          # txt.leg=paste("Cluster", 1:13), lab="",
+          ncol=1, xlab="individuals", col=funky(6))
+```
+
+## Testing for Hardy-Weinberg equilibrium
+```{r}
+
+```
+
+## Measuring and testing population structure (aka F statistics)
+```{r}
+
+```
+
+## Estimating inbreeding
+```{r}
+
+```
+
+## snapclust
+```{r}
+# adegenetTutorial("snapclust")
+meta_clust <- snapclust(genind_meta, k = 4)
+```
+```{r}
+meta_clust$group
+# 
+compoplot(meta_clust)
+```
+
