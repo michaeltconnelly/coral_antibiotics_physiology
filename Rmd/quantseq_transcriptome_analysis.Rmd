@@ -157,8 +157,8 @@ coldata %>%
 ## Import *Pocillopora* coral counts data and gene annotation
 ```{r coral_countdata}
 # Import and tidy counts data
-# countdata <- read.delim("./outputs/STARcounts_Pdam/PocAnti_Pdam.counts", comment.char="#")
-countdata <- read.delim("./outputs/tagseq/STARcounts_Pdam/PocAnti_Pdam_Round2.counts", comment.char="#")
+countdata <- read.delim("./outputs/tagseq/STARcounts_Pdam/PocAnti_Pdam.counts", comment.char="#")
+# countdata <- read.delim("./outputs/tagseq/STARcounts_Pdam/PocAnti_Pdam_Round2.counts", comment.char="#")
 # Set Gene ID's as row names
 row.names(countdata) <- countdata$Geneid
 # Remove first six columns (Geneid, chr, start, end, strand, length)
@@ -166,8 +166,9 @@ countdata <- countdata[ ,7:ncol(countdata)]
 #countdata <- countdata[ ,6:ncol(countdata)]
 # Remove file prefixes and suffixes
   colnames(countdata) <- gsub("X.", "", colnames(countdata))
-  colnames(countdata) <- gsub("scratch.projects.transcriptomics.mikeconnelly.projects.anti_phys.outputs.STARalign_Pdam.", "", colnames(countdata))
+  colnames(countdata) <- gsub("scratch.nmnh_corals.connellym.projects.anti_phys.outputs.STARalign_Pdam.", "", colnames(countdata))
   colnames(countdata) <- gsub("_Aligned.sortedByCoord.out.uniq.bam$", "", colnames(countdata))
+  colnames(countdata) <- gsub("_R1$", "", colnames(countdata))
   colnames(countdata) <- gsub("\\.", "-", colnames(countdata))
 ```
 ```{r coral_countdata_tidy}
@@ -191,29 +192,29 @@ gene2kog_coral <- gene_annotation_coral %>%
 ```
 
 ## Import *Cladocopium*/*Durusdinium* algal symbiont counts data and gene annotation
-Not possible yet, alignments to Cladocopium genome pending
+Not possible yet, alignments to Cladocopium and Durusdinium genome pending
 ```{r symbiont_countdata}
-# # Import and tidy counts data
-countdata <- read.delim("./outputs/tagseq/STARcounts_Symbio/PocAnti_Symbio.counts", comment.char="#")
-# ## Tidy counts data
-# #Set Gene ID's as row names
-row.names(countdata) <- countdata$Geneid
-# # Remove first six columns (Geneid, chr, start, end, strand, length)
-countdata <- countdata[ ,7:ncol(countdata)]
-# #countdata <- countdata[ ,6:ncol(countdata)]
-# # Remove file prefixes and suffixes
-  colnames(countdata) <- gsub("X.", "", colnames(countdata))
-  colnames(countdata) <- gsub("scratch.projects.transcriptomics.mikeconnelly.projects.anti_phys.outputs.STARalign_Symbio.", "", colnames(countdata))
-  colnames(countdata) <- gsub("_SymbioAligned.sortedByCoord.out.uniq.bam$", "", colnames(countdata))
-  colnames(countdata) <- gsub("\\.", "-", colnames(countdata))
+# # # Import and tidy counts data
+# countdata <- read.delim("./outputs/tagseq/STARcounts_Symbio/PocAnti_Symbio.counts", comment.char="#")
+# # ## Tidy counts data
+# # #Set Gene ID's as row names
+# row.names(countdata) <- countdata$Geneid
+# # # Remove first six columns (Geneid, chr, start, end, strand, length)
+# countdata <- countdata[ ,7:ncol(countdata)]
+# # #countdata <- countdata[ ,6:ncol(countdata)]
+# # # Remove file prefixes and suffixes
+#   colnames(countdata) <- gsub("X.", "", colnames(countdata))
+#   colnames(countdata) <- gsub("scratch.projects.transcriptomics.mikeconnelly.projects.anti_phys.outputs.STARalign_Symbio.", "", colnames(countdata))
+#   colnames(countdata) <- gsub("_SymbioAligned.sortedByCoord.out.uniq.bam$", "", colnames(countdata))
+#   colnames(countdata) <- gsub("\\.", "-", colnames(countdata))
 ```
 ```{r symbiont_countdata_tidy}
-# Select counts for samples present in coldata
-countdata_select <- countdata[, colnames(countdata) %in% rownames(coldata)]
-# Sort countdata by Cladocopium/Durusdinium gene ID
-countdata_sorted_symbiont <- as.data.frame(countdata_select[sort(rownames(countdata_select)), order(match(colnames(countdata_select),row.names(coldata)))]) 
-# Sanity check
-all(colnames(countdata_sorted_coral) == rownames(coldata))
+# # Select counts for samples present in coldata
+# countdata_select <- countdata[, colnames(countdata) %in% rownames(coldata)]
+# # Sort countdata by Cladocopium/Durusdinium gene ID
+# countdata_sorted_symbiont <- as.data.frame(countdata_select[sort(rownames(countdata_select)), order(match(colnames(countdata_select),row.names(coldata)))]) 
+# # Sanity check
+# all(colnames(countdata_sorted_coral) == rownames(coldata))
 ```
 ```{r symbiont_gene_annotation}
 # gene_annotation_symbiont <- read.delim("./data/cladocopium_genome_annotations.tsv", header = T) %>% arrange(ID)
@@ -238,11 +239,11 @@ all(rownames(dds_coral) == rownames(gene_annotation_coral))
 mcols(dds_coral) <- cbind(mcols(dds_coral), gene_annotation_coral)
 # Subset DESeqDataSet
 # Option 1: Remove genes with counts less than 10 in 90% of samples
-keep <- rowSums(counts(dds_coral) >= 10) > (ncol(countdata_sorted_coral)*0.9) # 5,537 genes
+# keep <- rowSums(counts(dds_coral) >= 10) > (ncol(countdata_sorted_coral)*0.9) # 5,527 genes
 # Option 2: Remove genes with mean counts less than 10
-# keep <- rowMeans(counts(dds_coral)) > 10 # 13,479 genes
+# keep <- rowMeans(counts(dds_coral)) > 10 # 13,454 genes
 # Option 3: Remove genes with mean counts less than 3
-# keep <- rowMeans(counts(dds_coral)) > 3 # 17,150 genes
+keep <- rowMeans(counts(dds_coral)) > 3 # 17,144 genes
 dds_coral <- dds_coral[keep, ]
 # Normalize expression data for visualization purposes using VST tranformation
 vsd_coral <- vst(dds_coral, blind = TRUE) # use blind = TRUE to not account for experimental design
@@ -487,7 +488,7 @@ varpct <- vptdf %>% pivot_longer(cols = -gene, names_to = "source", values_to = 
   summarise(total_pctvar_explained = sum(relvar))
 ```
 
-### Figure 4B
+### Supplementary Figure ##
 ```{r total_variance figure: manuscript}
 pdf("./outputs/figures/FigS9_variance_partition_totals.pdf", height = 4, width = 6.5)
 var_title <- expression(paste("Transcriptome variance factors"))
@@ -506,13 +507,13 @@ var_sum_plot <- varpct %>%
 print(var_sum_plot)
 dev.off()
 ```
-### Figure 4AB
+### Figure 4AB - Now Supplementary
 ```{r figure_4ab: manuscript}
-figure_4ab <- tx_pca + var_sum_plot
-# Need to add plot annotation tags (ie. A,B,C in Inkscape)
-pdf("./outputs/figures/Fig4_AB.pdf", height = 101.6/25.4, width = 175/25.4)
-print(figure_4ab)
-dev.off()
+# figure_4ab <- tx_pca + var_sum_plot
+# # Need to add plot annotation tags (ie. A,B,C in Inkscape)
+# pdf("./outputs/figures/Fig4_AB.pdf", height = 101.6/25.4, width = 175/25.4)
+# print(figure_4ab)
+# dev.off()
 ```
 
 ## Differential gene expression analysis (DESeq2)
@@ -774,6 +775,8 @@ mergedMods <- mergeCloseModules(datExpr, dynamicColors, cutHeight = 0.15, verbos
 # The merged module colors
 mergedColors <- mergedMods$colors
 table(mergedColors) 
+
+# 24 modules in less stringent filtering regime
 ```
 
 ### Figure 4C / Supplementary Figure 10
