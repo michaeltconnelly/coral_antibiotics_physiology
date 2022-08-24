@@ -712,7 +712,7 @@ dim(datExpr)
 ```{r soft_threshold}
 # Find correlation power R^N that satisfies scale free critereon (SFT.R.sq>0.9)
 sft <- pickSoftThreshold(datExpr, verbose = 1)
-sft$powerEstimate #4 #5
+sft$powerEstimate #5
 ```
 ### Step-by-step network construction
 ```{r adjacency_TOM}
@@ -725,7 +725,7 @@ sft$powerEstimate #4 #5
 adjacency <- adjacency(datExpr,
       # Network construction arguments:  correlation, adjacency function,  and topological overlap map options
                        corFnc = "bicor", # bimidweight correlation
-                       power = sft$powerEstimate, # 4 for coral, unknown for symbiont
+                       power = sft$powerEstimate, # 5 for coral, unknown for symbiont
                        type = "signed") # signed
 # 
 TOM <- TOMsimilarity(adjacency,
