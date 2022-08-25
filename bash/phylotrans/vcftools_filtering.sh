@@ -23,7 +23,7 @@ prodir="/scratch/nmnh_corals/connellym/projects/anti_phys"
 VCF_IN="${prodir}/outputs/phylotrans_Pdam/${VCF_NAME}.vcf.gz"
 VCF_OUT="${prodir}/outputs/phylotrans_Pdam/${VCF_NAME}_filtered_primary.vcf.gz"
 # set basic filtering parameters
-MAF="0.015"
+MAF="0.05"
 MISS="0.5"
 QUAL="30"
 MIN_DEPTH="20"
