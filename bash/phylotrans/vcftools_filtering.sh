@@ -27,7 +27,7 @@ MAF="0.05"
 MISS="0.5"
 QUAL="30"
 MIN_DEPTH="20"
-MAX_DEPTH="300"
+MAX_DEPTH="5000"
 THIN_BP="5000"
 # run vcftools command
 vcftools --gzvcf $VCF_IN \
