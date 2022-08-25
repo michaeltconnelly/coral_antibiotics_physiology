@@ -33,7 +33,8 @@ THIN_BP="5000"
 vcftools --gzvcf $VCF_IN \
 --remove-indels --maf $MAF --max-missing $MISS --minQ $QUAL \
 --min-meanDP $MIN_DEPTH --max-meanDP $MAX_DEPTH \
---minDP $MIN_DEPTH --maxDP $MAX_DEPTH --recode --stdout | gzip -c > \
+--minDP $MIN_DEPTH --maxDP $MAX_DEPTH --thin $THIN_BP --recode --stdout | gzip -c > \
 $VCF_OUT
 #
 echo = `date` job $JOB_NAME done
+#--max-missing-count 5
