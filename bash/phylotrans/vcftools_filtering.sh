@@ -23,12 +23,12 @@ prodir="/scratch/nmnh_corals/connellym/projects/anti_phys"
 VCF_IN="${prodir}/outputs/phylotrans_Pdam/${VCF_NAME}.vcf.gz"
 VCF_OUT="${prodir}/outputs/phylotrans_Pdam/${VCF_NAME}_filtered_primary.vcf.gz"
 # set basic filtering parameters
-MAF="0.05"
+MAF="0.015"
 MISS="0.5"
 QUAL="30"
 MIN_DEPTH="20"
-MAX_DEPTH="5000"
-THIN_BP="5000"
+MAX_DEPTH="300"
+THIN_BP="1000"
 # run vcftools command
 vcftools --gzvcf $VCF_IN \
 --remove-indels --maf $MAF --max-missing $MISS --minQ $QUAL \
