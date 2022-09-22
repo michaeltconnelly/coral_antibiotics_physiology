@@ -89,9 +89,9 @@ ggPCA <- function(vsd, samples, condcolors, ntop = 500,  pclab = c(1,2)) {
   #set factor orders 
   PCAtmtdata$Genotype <- factor(PCAtmtdata$Genotype, levels = genotype_levels, ordered = TRUE)
   PCAtmtdata$Treatment <- factor(PCAtmtdata$Treatment, levels = treatment_levels, ordered = TRUE)
-  
+  #
   PCAtmtpercentVar <- round(100 * attr(PCAtmtdata, "percentVar"), 1)
-  
+  #
   PCAplot <-  PCAtmtdata %>% ggplot(aes(PC1,PC2)) +
     geom_point(aes(fill = Treatment), shape = 21, size = 2, alpha = 1, stroke = 0.5, color = "black", show.legend = TRUE) +
     stat_ellipse(aes(color = Treatment), type = "norm") +
@@ -105,6 +105,108 @@ ggPCA <- function(vsd, samples, condcolors, ntop = 500,  pclab = c(1,2)) {
     guides(color = guide_legend(override.aes = list(color = treatcolors[2:3], alpha = 1, stroke = 1)))
   #
 PCAplot
+}
+
+### PCA plot formatted with modified aesthetics - treatment convex hulls ---------------------------------------------------------------------------
+ggPCA_mod1 <- function(vsd, samples, condcolors, ntop = 500,  pclab = c(1,2)) {
+  #
+  PCAtmtdata <- plotPCA.custom(vsd, intgroup = c("Treatment", "Genotype"), ntop = ntop, returnData = TRUE,  pcs = c(pclab[1],pclab[2]))
+  #set factor orders 
+  PCAtmtdata$Genotype <- factor(PCAtmtdata$Genotype, levels = genotype_levels, ordered = TRUE)
+  PCAtmtdata$Treatment <- factor(PCAtmtdata$Treatment, levels = treatment_levels, ordered = TRUE)
+  #
+  PCAtmtpercentVar <- round(100 * attr(PCAtmtdata, "percentVar"), 1)
+  #
+  PCAtmthull <- PCAtmtdata %>%
+    group_by(Treatment) %>% 
+    dplyr::slice(chull(PC1, PC2))
+  #
+  PCAtmtcent <- PCAtmtdata %>% 
+    dplyr::group_by(Treatment) %>% 
+    dplyr::summarise(c1 = mean(`PC1`), c2 = mean(`PC2`)) %>%    
+    full_join(PCAtmtdata)
+  #
+  PCAtmtlab <- PCAtmtdata %>% 
+    dplyr::group_by(Treatment) %>% 
+    dplyr::summarise(c1 = mean(`PC1`), c2 = mean(`PC2`)) %>% 
+    dplyr::mutate(Code = ifelse(`Treatment` == "Control", "C", "A"))
+  #
+  PCAplot <-  PCAtmtdata %>% ggplot(aes(PC1,PC2)) +
+    # spider segments
+    # geom_segment(data = PCAtmtcent, mapping = aes(x = `PC1`, y = `PC2`, xend = c1, yend = c2), lwd = 0.25, col = "dark grey") +
+    # convex hull
+    geom_polygon(data = PCAtmthull,
+                 aes(fill = Treatment, color = Treatment),
+                 alpha = 0.3,
+                 show.legend = FALSE) + 
+    # sample points
+    geom_point(aes(fill = Treatment), shape = 21, size = 2, alpha = 1, stroke = 0.5, color = "black", show.legend = TRUE) +
+    # treatment labels
+    geom_label(data = PCAtmtlab, size = 2, aes(x = c1, y = c2, label = `Code`), box.padding = 0.15, alpha = 0.8, segment.alpha = 0) +
+    xlab(paste0( "PC", pclab[1], " (", PCAtmtpercentVar[pclab[1]], "%)")) +
+    ylab(paste0( "PC", pclab[2], " (", PCAtmtpercentVar[pclab[2]], "%)")) +
+    coord_fixed(PCAtmtpercentVar[pclab[2]]/PCAtmtpercentVar[pclab[1]]) + 
+    scale_fill_manual(values=treatcolors[2:3], name="Treatment") +
+    scale_color_manual(values=treatcolors[2:3], name="Treatment") +
+    # scale_shape_manual(values=colshapes, name="Colony") +
+    theme(legend.position = "none") +
+    guides(color = guide_legend(override.aes = list(color = treatcolors[2:3], alpha = 1, stroke = 1)))
+  #
+  PCAplot
+}
+
+### PCA plot formatted with modified aesthetics - spider lines ---------------------------------------------------------------------------
+ggPCA_mod2 <- function(vsd, samples, condcolors, ntop = 500,  pclab = c(1,2)) {
+  #
+  PCAtmtdata <- plotPCA.custom(vsd, intgroup = c("Treatment", "Genotype"), ntop = ntop, returnData = TRUE,  pcs = c(pclab[1],pclab[2]))
+  #set factor orders 
+  PCAtmtdata$Genotype <- factor(PCAtmtdata$Genotype, levels = genotype_levels, ordered = TRUE)
+  PCAtmtdata$Treatment <- factor(PCAtmtdata$Treatment, levels = treatment_levels, ordered = TRUE)
+  #
+  PCAtmtpercentVar <- round(100 * attr(PCAtmtdata, "percentVar"), 1)
+  #
+  #
+  PCAtmthull <- PCAtmtdata %>%
+    # dplyr::select(-group, -Treatment, -name) %>% 
+    dplyr::group_by(Genotype) %>% 
+    dplyr::slice(chull(PC1, PC2))
+  #
+  PCAtmtcent <- PCAtmtdata %>% 
+    dplyr::group_by(Genotype) %>% 
+    dplyr::summarise(c1 = mean(`PC1`), c2 = mean(`PC2`)) %>%    
+    full_join(PCAtmtdata)
+  #
+  PCAtmtlab <- PCAtmtdata %>% 
+    dplyr::group_by(Genotype) %>% 
+    dplyr::summarise(c1 = mean(`PC1`), c2 = mean(`PC2`))
+  #
+  PCAplot <-  PCAtmtdata %>% ggplot(aes(PC1,PC2)) +
+    # convex hull
+    # geom_polygon(data = PCAtmthull, aes(Group = `Genotype`),
+                 # color = "black", fill = "white",
+                 # alpha = 0.3,
+                 # show.legend = FALSE) + 
+    # spider segments
+    geom_segment(data = PCAtmtcent, mapping = aes(x = `PC1`, y = `PC2`, xend = c1, yend = c2), lwd = 0.5, col = "darkgrey") +
+    # genotype centroid points
+    # geom_point(data = PCAtmtcent, size = 1, aes(x = c1, y = c2), fill = "black", color = "black", show.legend = FALSE) + 
+    # sample points
+    geom_point(aes(fill = Treatment), shape = 21, size = 2, alpha = 1, stroke = 0.5, color = "black", show.legend = TRUE) +
+    # Genotype centroid labels
+    geom_label(data = PCAtmtlab, size = 1.5, aes(x = c1, y = c2, label = `Genotype`), alpha = 0.8) +
+    # stat_ellipse(aes(Group = `Genotype`), color = "black", type = "norm") +
+    xlab(paste0( "PC", pclab[1], " (", PCAtmtpercentVar[pclab[1]], "%)")) + 
+    ylab(paste0( "PC", pclab[2], " (", PCAtmtpercentVar[pclab[2]], "%)")) +
+    # ylab(NULL) +
+    coord_fixed(PCAtmtpercentVar[pclab[2]]/PCAtmtpercentVar[pclab[1]]) + 
+    scale_fill_manual(values=treatcolors[2:3], name="Treatment") +
+    scale_color_manual(values=treatcolors[2:3], name="Treatment") +
+    # scale_shape_manual(values=colshapes, name="Colony") +
+    theme(legend.position = "none") +
+    guides(color = guide_legend(override.aes = list(color = treatcolors[2:3], alpha = 1, stroke = 1)))
+  #
+  PCAplot
+  # return(PCAtmthull)
 }
 
 ### PCoA plot formatted with aesthetics ------------------------------------------------------------------------------

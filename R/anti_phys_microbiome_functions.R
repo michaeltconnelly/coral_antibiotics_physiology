@@ -12,6 +12,7 @@ gg_biplot <- function (pcobj, choices = 1:2, scale = 1, pc.biplot = TRUE,
                        ellipse = FALSE, ellipse.prob = 0.95, labels = NULL, labels.size = 3, 
                        alpha = 1, var.axes = TRUE, circle = FALSE, circle.prob = 0.69, 
                        varname.size = 3, varname.adjust = 1.5, varname.abbrev = FALSE, taxlabs = NULL,
+                       convexhull = FALSE, centroidlabs = TRUE,
                        ...) 
 {
   library(ggplot2)
@@ -91,7 +92,7 @@ gg_biplot <- function (pcobj, choices = 1:2, scale = 1, pc.biplot = TRUE,
     # dplyr::filter(varname %in% int_families)
   # 
   g <- ggplot(data = df.u, aes(x = xvar, y = yvar)) + xlab(u.axis.labs[1]) + 
-    ylab(u.axis.labs[2]) + coord_fixed(1)
+    ylab(u.axis.labs[2]) + coord_fixed(0.75) #coord_fixed()
   if (var.axes) {
     if (circle) {
       theta <- c(seq(-pi, pi, length = 50), seq(pi, -pi, 
@@ -107,6 +108,16 @@ gg_biplot <- function (pcobj, choices = 1:2, scale = 1, pc.biplot = TRUE,
                           xend = x_mean, yend = y_mean),
                           arrow = arrow(length = unit(1/2, 
                                                                                                   "picas")), color = "grey")
+  }
+  if (!is.null(df.u$groups) && convexhull) {
+    convexhull <- df.u %>%
+      group_by(groups) %>% 
+      dplyr::slice(chull(xvar, yvar))
+    #
+    g <- g + geom_polygon(data = convexhull,
+                          aes(fill = groups, color = groups),
+                          alpha = 0.3,
+                          show.legend = FALSE)
   }
   if (!is.null(df.u$groups) && ellipse) {
     theta <- c(seq(-pi, pi, length = 50), seq(pi, -pi, length = 50))
@@ -135,7 +146,7 @@ gg_biplot <- function (pcobj, choices = 1:2, scale = 1, pc.biplot = TRUE,
   }
   else {
     if (!is.null(df.u$groups)) {
-      g <- g + geom_point(aes(fill = groups), shape = 21, size = 2, stroke = 0.5, color = "black", alpha = alpha)
+      g <- g + geom_point(aes(fill = groups), shape = 21, size = 2, stroke = 0.5, color = "black", alpha = alpha, show.legend = FALSE)
     }
     else {
       g <- g + geom_point(alpha = alpha)
@@ -149,6 +160,15 @@ gg_biplot <- function (pcobj, choices = 1:2, scale = 1, pc.biplot = TRUE,
                                         x = x_mean, y = y_mean, angle = angle_mean,
                                         hjust = hjust_mean), 
                        color = "black", size = varname.size)
+  }
+  if (!is.null(df.u$groups) && centroidlabs) {
+    centroids <- df.u %>% 
+      dplyr::group_by(groups) %>% 
+      dplyr::summarise(xc = mean(`xvar`), yc = mean(`yvar`)) %>%    
+      dplyr::mutate(`Code` = ifelse(groups == "Antibiotics", "A", ifelse(groups == "Baseline", "B", "C")))
+    #
+    g <- g + # treatment labels
+      geom_label_repel(data = centroids, size = 2, aes(x = xc, y = yc, label = `Code`), box.padding = 0.05, alpha = 0.8, segment.alpha = 0)
   }
   return(g)
   # return(df.v)

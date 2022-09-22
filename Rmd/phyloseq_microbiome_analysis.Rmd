@@ -27,6 +27,8 @@ library("ALDEx2")
 # library("lefser") # BiocManager::install("lefser")
 library("decontam") # devtools::install_github("benjjneb/decontam")
 # library("microbiomeMarker")
+library("UpSetR")
+library("eulerr")
 # Data visualization packages
 library("pheatmap")
 # Graphics packages
@@ -311,7 +313,7 @@ genus <- as.character(taxon[,"Genus"])
 # Transform zero counts using the count zero multiplicative method in zCompositions, Palarea-Albaladejo and Martín-Fernández, 2015: https://doi.org/10.1016/j.chemolab.2015.02.019
 # First, replace 0 values with an estimate (because normalization is taking log, can't have 0)
 # Also transpose here, need samples as rows
-otu_czm <- cmultRepl(t(otu), method = "CZM", label = 0) # 91,652 corrected values
+otu_czm <- cmultRepl(t(otu), method = "CZM", label = 0) # 89,870 corrected values
 # Perform the center-log-ratio (CLR) transformation, recommended by Gloor et al. 2017: https://doi.org/10.3389/fmicb.2017.02224
 otu_clr <- codaSeq.clr(otu_czm)
 ```
@@ -631,6 +633,9 @@ beta_boxplot
 samples_only <- grep("_", samples, value = TRUE, invert = FALSE)
 ps_filtered_samples <- prune_samples(samples_only, ps_filtered)
 ps_samples <- prune_samples(samples_only, ps)
+#
+samples_baselinecontrol <- grep("Antibiotics", samples_only, value = TRUE, invert = TRUE)
+ps_filtered_baselinecontrol <- prune_samples(samples_baselinecontrol, ps_filtered)
 ```
 ## Compositional Data Analysis (CoDA) 
 ```{r codaseq_export}
@@ -661,9 +666,9 @@ e_clr <- t(otu_clr)
 # plot compositional PCA biplot (perform a singular value decomposition)
 d_pcx <- prcomp(e_clr)
 # inspect pca results
-summary(d_pcx)
-str(d_pcx)
-screeplot(d_pcx)
+# summary(d_pcx)
+# str(d_pcx)
+# screeplot(d_pcx)
 # calculate percent variance explained for the axis labels
 pc1 <- round(d_pcx$sdev[1]^2/sum(d_pcx$sdev^2),3)*100
 pc2 <- round(d_pcx$sdev[2]^2/sum(d_pcx$sdev^2),3)*100
@@ -751,7 +756,9 @@ pca_clr_biplot <- d_pcx %>%
   gg_biplot(., choices = c(1,2),
             groups = sample_metadata$Treatment,
             groups2 = sample_metadata$Treatment,
-            ellipse = TRUE,
+            convexhull = TRUE,
+            centroidlabs = TRUE,
+            ellipse = FALSE,
             var.axes = FALSE,
             taxlabs = "Genus",
             varname.abbrev = F,
@@ -777,7 +784,7 @@ gulfs <- as.character(sample_metadata$Gulf)
 locations <- as.character(sample_metadata$Location)
 genotypes <- as.character(sample_metadata$Genotype)
 mtorfs <- as.character(sample_metadata$mtORF)
-its <-  as.character(sample_metadata$ITS2)
+genus <-  as.character(sample_metadata$Symbiont_Genus)
 ```
 #### ANOSIM
 ```{r anosim}
@@ -792,8 +799,8 @@ plot(anosim_location)
 # Colony
 anosim_genotype <- anosim(dist_clr, genotypes, permutations = 999)
 plot(anosim_genotype)
-# ITS2
-anosim_sym <- anosim(dist_clr, its, permutations = 999)
+# Symbiont
+anosim_sym <- anosim(dist_clr, genus, permutations = 999)
 plot(anosim_sym)
 # All ANOSIM tests for each factor yield significant results
 ```
@@ -810,7 +817,7 @@ beta_colony <- betadisper(dist_clr, genotypes)
 permutest(beta_colony)
 beta_colony <- betadisper(dist_clr, mtorfs)
 permutest(beta_colony)
-beta_colony <- betadisper(dist_clr, its)
+beta_colony <- betadisper(dist_clr, genus)
 permutest(beta_colony)
 # All PERMDISP tests reject hypothesis for homogeneity of multivariate dispersions
 ```
@@ -829,6 +836,23 @@ print(permanova_colony)
 #
 permanova_mtorf <- adonis(dist_clr ~ mtorfs, data = sample_metadata)
 print(permanova_colony)
+#
+permanova_sym <- adonis(dist_clr ~ genus, data = sample_metadata)
+print(permanova_sym)
+```
+```{r pairwise_permanova}
+# Pairwise Adonis/PERMANOVA tests
+# Treatment
+pairwise_permanova_treatment <- pairwise.adonis(dist_clr, treatments)
+print(pairwise_permanova_treatment)
+# write_csv(pairwise_permanova_treatment, "./outputs/pairwise_permanova_treatment_symbiont.csv")
+# Site
+pairwise_permanova_site <- pairwise.adonis(dist_clr, locations)
+print(pairwise_permanova_site)
+# Colony (Genotype)
+pairwise_permanova_colony <- pairwise.adonis(dist_clr, genotypes)
+print(pairwise_permanova_colony)
+# write_csv(pairwise_permanova_colony, "./outputs/pairwise_permanova_colony_symbiont.csv")
 ```
 #### Distances to centroids boxplots
 ```{r betadisper}
@@ -902,13 +926,49 @@ dev.off()
 ```{r beta_kruskal_test}
 kruskal.test(data=mod_distance, mod.distance ~ Treatment)
 ```
-## Taxa composition plots
+## Taxa composition
 ```{r relative_abundance_transform}
 # Create phyloseq object with relative abundances
 # Important for many downstream analyses - barplots, core microbiome bubbleplots, etc.
 ps_filtered_rel <- transform_sample_counts(ps_filtered_samples, function(x) {x / sum(x)})
 ps_filtered_rel
+#
+ps_filtered_baselinecontrol_rel <- transform_sample_counts(ps_filtered_baselinecontrol, function(x) {x / sum(x)})
 ```
+
+### Taxa composition summaries
+```{r}
+
+toptaxa_summary <- function(physeq, taxa_rank) {
+  glom <- tax_glom(physeq, taxrank = taxa_rank)
+  psmelted <- psmelt(glom)
+  psmelted[, taxa_rank] <- as.character(psmelted[ , taxa_rank])
+  # psmelted[psmelted$Abundance < 0.01, taxa_rank] <- "<1% abundance"
+  # psmelted[psmelted$Abundance < 0.05, taxa_rank] <- "<5% abundance"
+  #
+  taxa_rank_name <- sym(taxa_rank)
+  toptaxa_summary_df <- psmelted %>% 
+    dplyr::group_by({{ taxa_rank_name }}) %>% 
+    dplyr::summarise(total_abundance = sum(Abundance)) %>% 
+    dplyr::mutate(total_relative_abundance = as.numeric(total_abundance/sum(total_abundance))) %>% 
+    arrange(desc(total_relative_abundance))
+    return(toptaxa_summary_df)
+}
+  
+```
+```{r}
+phyla_baselinecontrol <- toptaxa_summary(ps_filtered_baselinecontrol, "Phylum")
+#
+orders_baselinecontrol <- toptaxa_summary(ps_filtered_baselinecontrol, "Order")
+families_baselinecontrol <- toptaxa_summary(ps_filtered_baselinecontrol, "Family")
+genera_baselinecontrol <- toptaxa_summary(ps_filtered_baselinecontrol, "Genus")
+```
+```{r}
+phyla_antibiotics <- toptaxa_summary(ps_antibiotics, "Phylum")
+families_antibiotics <- toptaxa_summary(ps_antibiotics, "Family")
+```
+
+
 ```{r taxa colors, include=FALSE}
 # run below taxa colors command until you get a set of colors you like, then comment out and write to csv file for custom edits!
 # then read in csv to preserve colors across sessions
@@ -1056,7 +1116,7 @@ dev.off()
 ```{r figure 3: patchwork}
 figure_3 <- (pca_clr_biplot | obs_boxplot / beta_boxplot)
 # Need to add plot annotation tags (ie. A,B,C in Inkscape)
-pdf("./outputs/figures/Fig3_ABC.pdf", height = 91.4/25.4, width = 175/25.4)
+pdf("./outputs/figures/Fig3_ABC.pdf", height = 88.9/25.4, width = 175/25.4)
 print(figure_3)
 dev.off()
 ```
@@ -1265,9 +1325,9 @@ data.frame("ASV" = intersect(base_control, anti_shared)) %>% left_join(taxa_df, 
 ## Core microbiome analysis
 ```{r core_microbiome_phyloseq}
 # Determine members of the core microbiota with given abundance and prevalences
-core_taxa_standard <- core_members(ps_filtered_rel, detection = 0, prevalence = 0.8)
+core_taxa_standard <- core_members(ps_filtered_rel, detection = 0, prevalence = 0.8) # 10
 # 
-core_taxa_fifty <- core_members(ps_filtered_rel, detection = 0, prevalence = 0.5)
+core_taxa_fifty <- core_members(ps_filtered_rel, detection = 0, prevalence = 0.5) # 56
 # 
 # Filter the phyloseq object to include only core prevalent taxa
 ps_filtered_core_standard <- core(ps_filtered_rel, detection = 0, prevalence = 0.8)
@@ -1280,30 +1340,120 @@ ps_filtered_core_fifty
 # sample_data() Sample Data:       [ 166 samples by 11 sample variables ]
 # tax_table()   Taxonomy Table:    [ 56 taxa by 7 taxonomic ranks ]
 # phy_tree()    Phylogenetic Tree: [ 56 tips and 55 internal nodes ]
-# 
-
-  dplyr::count(Class) %>% View()
-# 
-phyloseq::otu_table(ps_filtered_core_fifty)
 ```
-### Supplementary Table 2
+### Treatment core microbiomes
+```{r treatment_core}
+# Treatment-specific core microbiomes
+# --> how much of the core microbiome is eliminated by antibiotics treatment?
+baseline_core <- core_members(ps_baseline_rel, detection = 0, prevalence = 0.75) # 48
+control_core <- core_members(ps_control_rel, detection = 0, prevalence = 0.75) # 40
+antibiotics_core <- core_members(ps_antibiotics_rel, detection = 0, prevalence = 0.75) # 14
+#
+#
+combo_core <- union(union(baseline_core, control_core),  antibiotics_core) # 54 total
+# prune taxa to just those in the combined treatment core
+ps_combo_core_rel <- ps_filtered_rel %>% 
+  prune_taxa(combo_core,.)
+#
+baseline_control_core <- intersect(baseline_core, control_core)
+# prune taxa
+ps_combo_core_rel <- ps_filtered_rel %>% 
+  prune_taxa(baseline_control_core,.)
+# prune to just correlated taxa
+ps_combo_core_rel <- ps_filtered_rel %>% 
+  prune_taxa(wgcna_correlated_core,.)
+```
+```{r treatment_core_venn}
+intersect(baseline_core, control_core)
+intersect(baseline_core, antibiotics_core)
+intersect(control_core, antibiotics_core)
+#
+core_taxa_baseline_control <- tax_table(ps_filtered) %>% as.data.frame() %>% rownames_to_column("ID") %>% dplyr::filter(ID %in% intersect(baseline_core, control_core))
+#
+core_taxa_antibiotics_remove <- tax_table(ps_filtered) %>% as.data.frame() %>% rownames_to_column("ID") %>% dplyr::filter(ID %in% setdiff(intersect(baseline_core, control_core), antibiotics_core))
+#
+core_taxa_antibiotics_persist <- tax_table(ps_filtered) %>% as.data.frame() %>% rownames_to_column("ID") %>% dplyr::filter(ID %in% intersect(control_core, antibiotics_core))
+#
+core_taxa_antibiotics_unique <- tax_table(ps_filtered) %>% as.data.frame() %>% rownames_to_column("ID") %>% dplyr::filter(ID %in% setdiff(control_core, antibiotics_core))
+```
+```{r treatment_core_upset}
+listInput <- list("Baseline" = baseline_core, 
+                  "Control" = control_core, 
+                  "Antibiotics" = antibiotics_core)
+#
+upset(fromList(listInput),  nsets = 3, 
+      order.by = "freq", keep.order = F,
+      empty.intersections = "on", nintersects = NA,
+      sets.bar.color = treatcolors)
+```
+```{r treatment_core_euler}
+# Input in the form of a named numeric vector
+fit1 <- euler(c("Baseline" = 10, "Control" = 3, "Antibiotics" = 3, 
+                "Baseline&Control" = 27, "Antibiotics&Baseline" = 1, "Antibiotics&Control" = 0, 
+                "Antibiotics&Baseline&Control" = 10), shape = "ellipse")
+#
+treatment_core_euler <- plot(fit1,
+     quantities = list(type = c("counts"), fontsize = 9),
+     labels = identical(legend, FALSE),
+     fills = list(fill = treatcolors, alpha = 0.5),
+     edges = list(lwd = 0.5),
+     legend = FALSE, 
+     adjust_labels = TRUE)
+treatment_core_euler
+```
+### Figure 3D
+```{r figure 3D: manuscript}
+pdf("./outputs/figures/Fig3D_treatment_core_upset.pdf", height = 75/25.4, width = 175/25.4)
+treatment_upset <- upset(fromList(listInput),  nsets = 3, 
+      order.by = "freq", keep.order = F,
+      empty.intersections = "on", nintersects = NA,
+      sets.bar.color = treatcolors)
+print(treatment_upset)
+dev.off()
+```
+```{r figure 3D: manuscript}
+pdf("./outputs/figures/Fig3D_treatment_core_euler.pdf", height = 40/25.4, width = 40/25.4)
+treatment_core_euler
+dev.off()
+```
+
+```{r symbiont_type_core}
+
+```
+
+
+### Supplementary Tables 2 - 4
 ```{r}
-core_taxa_fifty_table <- tax_table(ps_filtered_core_fifty) %>% as.data.frame() %>% 
-  rownames_to_column("ASV")
+core_taxa_baseline <- tax_table(ps_filtered) %>% as.data.frame() %>% rownames_to_column("ID") %>% dplyr::filter(ID %in% baseline_core)
+write_excel_csv(core_taxa_baseline, "./outputs/phyloseq_results/TableS2_core_taxa_baseline.csv")
 # 
-write_csv(core_taxa_fifty_table, "./outputs/phyloseq_results/TableS2_core_taxa_fifty_table.csv")
+core_taxa_control <- tax_table(ps_filtered) %>% as.data.frame() %>% rownames_to_column("ID") %>% dplyr::filter(ID %in% control_core)
+write_excel_csv(core_taxa_control, "./outputs/phyloseq_results/TableS3_core_taxa_control.csv")
 # 
+core_taxa_antibiotics <- tax_table(ps_filtered) %>% as.data.frame() %>% rownames_to_column("ID") %>% dplyr::filter(ID %in% antibiotics_core)
+write_excel_csv(core_taxa_antibiotics, "./outputs/phyloseq_results/TableS4_core_taxa_antibiotics.csv")
+```
+### Supplementary Tables 5 - 6
+```{r}
+#
+write_excel_csv(core_taxa_antibiotics_remove, "./outputs/phyloseq_results/TableS5_core_taxa_antibiotics_reduced_table.csv")
+#
+write_excel_csv(core_taxa_antibiotics_persist, "./outputs/phyloseq_results/TableS6_core_taxa_antibiotics_persist_table.csv")
+#
 ```
 
 ```{r core_microbiome_abundance}
 core_abundance_standard <- sample_sums(ps_filtered_core_standard)
 core_abundance_fifty <- sample_sums(ps_filtered_core_fifty)
+#
+core_abundance_combo <- sample_sums(ps_combo_core_rel)
 ```
 ### Plots of core microbiome relative abundance
 ```{r}
-core_abundance_df <- data.frame(core_abundance_fifty) %>% 
+
+core_abundance_df <- data.frame(core_abundance_combo) %>% 
   rownames_to_column("Sample_ID") %>% 
-  dplyr::rename("core_abundance" = core_abundance_fifty) %>% 
+  dplyr::rename("core_abundance" = core_abundance_combo) %>% 
   left_join(sample_metadata, by = "Sample_ID")
 ```
 ```{r}
@@ -1350,6 +1500,13 @@ bubble_core_fifty <- bubble_data_asv %>%
   dplyr::filter(ASV %in% core_taxa_fifty) #%>% 
   # dplyr::filter(Treatment != "Baseline")
 # 
+bubble_core_combo <- bubble_data_asv %>%
+  dplyr::filter(ASV %in% combo_core) #%>% 
+  # dplyr::filter(Treatment != "Baseline")
+#
+bubble_core_baseline_control <- bubble_data_asv %>%
+  dplyr::filter(ASV %in% baseline_control_core) #%>% 
+  
 unique(bubble_core_fifty$Class)
 unique(bubble_core_fifty$Family)
 class_order <- c(" Alphaproteobacteria", " Gammaproteobacteria", " Desulfovibrionia",
@@ -1360,6 +1517,13 @@ class_order <- c(" Alphaproteobacteria", " Gammaproteobacteria", " Desulfovibrio
 bubble_core_fifty$Class <- factor(bubble_core_fifty$Class, 
                                   levels = class_order, 
                                   ordered = TRUE)
+#
+class_order <- c(" Alphaproteobacteria", " Gammaproteobacteria", " Desulfovibrionia",
+                                             " Phycisphaerae", " Planctomycetes", " Bacteroidia", 
+                                             " Bdellovibrionia", " Campylobacteria")
+bubble_core_combo$Class <- factor(bubble_core_combo$Class, 
+                                  levels = class_order, 
+                                  ordered = TRUE)
 ```
 
 ```{r phylogenetic_tree_test}
@@ -1367,6 +1531,8 @@ bubble_core_fifty$Class <- factor(bubble_core_fifty$Class,
 ps_filtered_rel %>% plot_tree(color = "Treatment", size = "Abundance", label.tips = "Family")
 # core microbiome ASVs
 ps_filtered_core_fifty %>% plot_tree(color = "Treatment", size = "Abundance", label.tips = "Family")
+# combined core ASVs
+ps_combo_core_rel %>%  plot_tree(color = "Treatment", size = "Abundance", label.tips = "Family")
 ```
 ```{r phylogenetic_tree_change_tip_labels}
 # All ASVs
@@ -1385,15 +1551,17 @@ p2 + geom_tiplab()
 ```
 ```{r phylogenetic_tree_change_tip_labels}
 # core microbiome ASVs
-ps_tree <- phy_tree(ps_filtered_core_fifty) # ps_filtered_core_fifty
+ps_tree <- phy_tree(ps_combo_core_rel) # ps_filtered_core_fifty
 p <- ggtree(ps_tree)
 # ps_tree$tip.label # tip labels are ASV IDs
 # create data frame with ASV taxonomy information
-taxa_df_core_fifty <- data.frame(tax_table(ps_filtered_core_fifty)) #Genus
+# taxa_df_core_fifty <- data.frame(tax_table(ps_filtered_core_fifty)) #Genus
+taxa_df_combo_core <- data.frame(tax_table(ps_combo_core_rel))
 # confirm that data frame rownames match tree tip labels, to prevent misassignment
-all(rownames(taxa_df_core_fifty) == ps_tree$tip.label) 
+all(rownames(taxa_df_combo_core) == ps_tree$tip.label) 
 # change tip labels on phylogenetic tree
-ps_tree$tip.label <- taxa_df_core_fifty$Class
+# ps_tree$tip.label <- taxa_df_core_fifty$Class
+ps_tree$tip.label <- taxa_df_combo_core$Family
 p2 <- ggtree(ps_tree) # create phylogenetic tree
 # plot tree test
 p2 + geom_tiplab()
@@ -1422,8 +1590,8 @@ ggtree(ps_tree_class) + geom_tiplab()
 # 
 colors_classes <- taxa_color_seq(ps_filtered_core_fifty, taxa_rank = "Class")
 ```
-### Figure 3D
-```{r figure 3D: manuscript}
+### Figure 3E
+```{r figure 3E: manuscript}
 # Bubble plot showing differential effects of antibiotics treatment on core bacteria taxa
 pdf("./outputs/figures/Fig3D_bubbleplot_tree_all.pdf", height = 133/25.4, width = 175/25.4)
 bubble_title <- expression(paste("Relative abundance of ASVs present in >50% of ", italic("Pocillopora"), " samples"))
@@ -1475,6 +1643,62 @@ strip_colors <- c(treatcolors[1:3])
   print(gp)
 dev.off()
 ```
+```{r figure 3E: manuscript}
+# Bubble plot showing differential effects of antibiotics treatment on core bacteria taxa - across treatments!
+pdf("./outputs/figures/Fig3E_bubbleplot_tree_treatmentcore.pdf", height = 140/25.4, width = 175/25.4)
+bubble_title <- expression(paste("Relative abundance of core ASVs detected in >75% of samples in any treatment"))
+# 
+tree_bubbleplot <- p + 
+  # geom_tiplab(size = 2) +
+  geom_fruit(data = bubble_core_combo, # bubble_core_fifty
+             geom = geom_point,
+             mapping = aes(x = Sample_ID, y = ASV, fill = Class, size = relative_abundance*100),
+             offset = 0.05,
+             pwidth = 4,
+             # lwd = .05,
+             alpha = 0.5,
+             shape = 21,
+             stroke = 0.2,
+             color = "black",
+             axis.params = list(),
+             grid.params = list(vline = FALSE, color = "white"), #  list() if grid lines desired
+             show.legend = TRUE) +
+  facet_grid(. ~ Treatment, scales = "free_x", space = "free", drop = TRUE) +
+  scale_size_continuous(range = c(1, 10), breaks = c(0.1, 25, 50, 100), limits = c(0.01, 100),
+                        labels = c("0.1%", "25%", "50%", "100%"),
+                        guide = guide_legend(override.aes = list(fill = "lightgrey", color = "black", alpha = 1))) +
+  # scale_fill_viridis(discrete = T,
+  #                    guide = guide_legend(override.aes = list(size = 6, alpha = 0.8))) +
+  scale_fill_brewer(palette = "Set3", 
+                    guide = guide_legend(override.aes = list(size = 5, alpha = 0.8))) +
+  # scale_fill_manual(values = colors_classes,
+                    # guide = guide_legend(override.aes = list(size = 6, alpha = 0.8))) +
+  labs(size = "Relative Abundance", fill = "Class") +
+  theme(axis.text = element_blank(),
+        plot.title = element_text(hjust = 1.25, size = 12),
+        legend.position = "left",
+        legend.spacing.y = unit(1,"mm"),
+        legend.title = element_text(size = 10),
+        legend.justification = c(0,0),
+        panel.background = element_rect(color = "white", fill = NA)) +
+  ggtitle(bubble_title)
+
+# modify facet strip colors
+strip_colors <- c(treatcolors[1:3])
+  gt <- ggplotGrob(tree_bubbleplot)
+  strip_both <- which(grepl('strip-', gt$layout$name))
+  k <- 1
+  for (i in strip_both) {
+    j <- which(grepl('rect', gt$grobs[[i]]$grobs[[1]]$childrenOrder))
+    gt$grobs[[i]]$grobs[[1]]$children[[j]]$gp$fill <- strip_colors[k]
+    k <- k+1
+  }
+  # # draw gtable object
+  gp <- grid.draw(gt)
+  print(gp)
+dev.off()
+```
+
 ```{r}
 # Bubble plot showing differential effects of antibiotics treatment on all bacteria ASVs
 pdf("./outputs/figures/FigS##_bubbleplot_tree_all_ASVs.pdf", height = 8.5, width = 11)
@@ -1575,6 +1799,7 @@ sample_asv_data <- data.frame(otu_table(ps_filtered_rel)) %>%
 # 
 colnames(sample_asv_data) <- gsub("^X", "", colnames(sample_asv_data))
 ```
+### Class cumulative relative abundance of overall core ASVs
 ```{r bacteria_class_WGCNA, message=FALSE}
 # need to filter to only samples analyzed for transcriptomes
 class_abundances <- ps_filtered_rel %>%
@@ -1600,6 +1825,85 @@ datTaxa_Class <- class_average_abundances %>%
 #
 write_csv(datTaxa_Class, file = "./outputs/phyloseq_results/datTaxa_Class.csv")
 ```
+### Relative abunance of individual baseline and control core ASVs 
+```{r}
+# need to filter to only samples analyzed for transcriptomes
+combo_core_abundances <- ps_filtered_rel %>% # use original relative abundances for these specific core ASVs
+  subset_samples(., sample_names(ps_filtered_rel) %in% samples_analysis$Sample_ID[match(rownames(coldata), samples_analysis$Sample_ID)]) %>% 
+  # tax_glom(., taxrank = "Class") %>% # keep as individual ASVs for high-resolution hypotheses
+  psmelt(.) %>%
+  # filter(Abundance > 0.001) %>%
+# include only 37 ASVs detected in baseline and control core microbiomes: 27 are depleted by antibiotics, 10 persist
+  dplyr::filter(OTU %in% baseline_control_core) 
+#
+datTaxa_CoreASVs <- combo_core_abundances %>% 
+  dplyr::select(OTU, Sample, Abundance) %>% 
+  tidyr::pivot_wider(names_from = OTU, values_from = Abundance) %>% 
+  dplyr::arrange(Sample) %>% 
+  # dplyr::select(Sample, ps_tree$tip.label) %>% 
+  column_to_rownames("Sample") 
+#
+# create extended text labels to display taxonomy information, and not just ASV IDs
+CoreASVs_labels <- combo_core_abundances %>% 
+    mutate(Label = str_c(OTU, Order, Family, sep = ":")) %>% 
+    dplyr::select(OTU, Label) %>% distinct(OTU, .keep_all = T) %>% View()
+    tidyr::pivot_wider(names_from = OTU, values_from = Label) %>% 
+    dplyr::select(ps_tree$tip.label) %>%
+    tidyr::pivot_longer(1:54, names_to = "OTU", values_to = "Label")
+#
+# add column names to display ASV taxonomic information on correlation heatmap
+colnames(datTaxa_CoreASVs) <- CoreASVs_labels$Label
+#
+# write_csv(datTaxa_CoreASVs, file = "./outputs/phyloseq_results/datTaxa_CoreASVs.csv")
+```
+```{r wgcna_core_asv_dendrogram}
+# ps_tree$tip.label
+# confirm that data frame rownames match tree tip labels, to prevent misassignment
+all(rownames(taxa_df_combo_core) == ps_tree$tip.label) 
+# colnames(datTaxa_CoreASVs)
+# ps_tree$tip.label
+all(colnames(datTaxa_CoreASVs) == ps_tree$tip.label)
+# 
+# 
+clustASVs <- as.dendrogram.phylo(ps_tree)
+#
+clustASVs_save <- as.dendrogram.phylo(ps_tree)
+```
+### Relative abunance of specific core ASVs that are correlated to one or more WGCNA modules
+```{r}
+# need to filter to only samples analyzed for transcriptomes
+combo_core_abundances <- ps_filtered_rel %>% # use original relative abundances for these specific core ASVs
+  subset_samples(., sample_names(ps_filtered_rel) %in% samples_analysis$Sample_ID[match(rownames(coldata), samples_analysis$Sample_ID)]) %>% 
+  # tax_glom(., taxrank = "Class") %>% # keep as individual ASVs for high-resolution hypotheses
+  psmelt(.) %>%
+  # filter(Abundance > 0.001) %>%
+# include only 37 ASVs detected in baseline and control core microbiomes: 27 are depleted by antibiotics, 10 persist
+  dplyr::filter(OTU %in% wgcna_correlated_core) 
+#
+datTaxa_CoreASVs <- combo_core_abundances %>% 
+  dplyr::select(OTU, Sample, Abundance) %>% 
+  tidyr::pivot_wider(names_from = OTU, values_from = Abundance) %>% 
+  dplyr::arrange(Sample) %>% 
+  # dplyr::select(Sample, ps_tree$tip.label) %>% 
+  column_to_rownames("Sample") 
+#
+# create extended text labels to display taxonomy information, and not just ASV IDs
+CoreASVs_labels <- combo_core_abundances %>% 
+    mutate(Label = str_c(OTU, Order, Family, sep = ":")) %>% 
+    dplyr::select(OTU, Label) %>% distinct(OTU, .keep_all = T) %>% 
+    tidyr::pivot_wider(names_from = OTU, values_from = Label) %>% 
+    # dplyr::select(ps_tree$tip.label) %>%
+    tidyr::pivot_longer(1:20, names_to = "OTU", values_to = "Label")
+#
+# add column names to display ASV taxonomic information on correlation heatmap
+colnames(datTaxa_CoreASVs) <- CoreASVs_labels$Label
+```
+
+
+```{r}
+combo_core_abundances %>% ggplot(aes(Abundance)) + geom_histogram(binwidth = 0.001)
+```
+
 
 ```{r}
 # 
@@ -1614,12 +1918,18 @@ genus_abundances <- ps_filtered_rel %>%
   tax_glom(., taxrank = "Genus") %>% 
   psmelt(.) %>% 
   # filter(Family %in% int_families) %>%
+  # dplyr::filter(Family == "Endozoicomonadaceae")
   group_by(SampleID, Genus) %>%
   dplyr::summarise(avg_rel_abundance = mean(Abundance, na.rm = TRUE))
 # 
 genus_abundances %>% 
   ggplot(aes(x = Genus, y = avg_rel_abundance)) +
   geom_boxplot()
+```
+
+### Supplementary Table 
+```{r}
+tax_table(ps_filtered) %>% as.data.frame() %>% rownames_to_column("ID") %>% dplyr::filter(ID %in% colnames(modP_bacteria)) %>% write_excel_csv(., "./outputs/phyloseq_results/TableSX_correlated_core_taxa_table.csv")
 ```
 
 
