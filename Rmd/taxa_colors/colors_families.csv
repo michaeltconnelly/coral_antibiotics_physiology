@@ -1,82 +1,40 @@
 Family,cum_rel_ab,hex,colors
-<1% abundance,0,#D3D3D3,lightgrey
- f__Rickettsiales,2.1800741225201658e-4,#8155E9,slateblue2
- f__Comamonadaceae,2.1843599825251202e-4,#F12A83,violetred2
- f__Spongiibacteraceae,2.1843599825251202e-4,#916FBC,mediumpurple3
- f__Coxiellaceae,2.4752475247524753e-4,#8AE7F3,cadetblue2
- f__Vermiphilaceae,2.5018195050946143e-4,#D994E6,plum
- f__Burkholderiaceae,3.2771535580524347e-4,#89CBA8,darkseagreen3
- f__Phormidesmiaceae,3.391649455311222e-4,#ECE2C2,lemonchiffon2
- f__Micrococcaceae,3.611111111111111e-4,#D2ECE4,lightcyan2
- f__Pseudohongiellaceae,4.8069134560206817e-4,#E531D8,maroon1
- f__Rs-M59_termite_group,5.231542815849693e-4,#E7AE60,sandybrown
- f__Xanthobacteraceae,5.681818181818182e-4,#E3BEB4,rosybrown2
- f__Puniceicoccaceae,6.21145463103053e-4,#907474,mistyrose4
- f__Parvibaculaceae,6.28931699064628e-4,#B4AFF1,lightsteelblue
- f__Parachlamydiaceae,7.435475096449357e-4,#E5F0B4,palegoldenrod
- f__028H05-P-BN-P5,9.775130055378418e-4,#76C681,palegreen3
- f__Methylomonadaceae,9.945491194642126e-4,#5879EE,royalblue1
- f__Simkaniaceae,9.949040932606176e-4,#33BA43,limegreen
- f__Paraspirulinaceae,0.0010447194087281392,#E84944,brown2
- f__Rhizobiaceae,0.0011461957089481999,#F29EC0,pink2
- f__UBA12411,0.0013099197550417061,#7DF27E,"c(""lightgreen"", ""palegreen2"")"
- f__Saccharospirillaceae,0.001509413640583309,#56A6A1,cadetblue
- f__PS1_clade,0.0019479297082601727,#A9B0B8,"c(""gray69"", ""grey69"")"
- f__Fusibacteraceae,0.0019848751662523423,#E6AF2F,goldenrod2
- f__Nodosilineaceae,0.002050281861096233,#A74599,orchid4
- f__AB1,0.0021329382184414793,#ACEF7C,darkolivegreen2
- f__Pseudomonadaceae,0.002239257606180186,#D4CD7A,khaki3
- f__Porticoccaceae,0.0023126708944781527,#DE927A,darksalmon
- f__Rickettsiaceae,0.002338651464438658,#DBA5B0,lightpink2
- f__Chlamydiaceae,0.0025204468743280782,#C1457A,violetred3
- f__Piscirickettsiaceae,0.0032923158614667643,#EB75B0,hotpink2
- f__OM182_clade,0.003374376712729223,#53ACC6,steelblue3
- f__Legionellaceae,0.0037707037225861,#E438AE,maroon2
- f__Spirochaetaceae,0.0038760690265977784,#48E9B2,seagreen2
- f__Rubinisphaeraceae,0.004016914942887097,#E3CD5D,khaki3
- f__Gimesiaceae,0.004281364058305226,#E6F184,khaki2
- f__Aminicenantales,0.004311343299378905,#51A777,mediumseagreen
- f__Oleiphilaceae,0.0051361442386643145,#BDEA54,darkolivegreen2
- f__Arenicellaceae,0.00539305267460491,#48EA8E,seagreen2
- f__Cryomorphaceae,0.007068376618521876,#61CDEE,steelblue1
- f__Flavobacteriaceae,0.0071541857793392645,#63F4F1,"c(""aquamarine"", ""aquamarine1"")"
- f__SM2D12,0.00850786234337243,#E8C8E7,thistle2
- f__OM190,0.00921778044503661,#A34B51,palevioletred4
- f__Bdellovibrionaceae,0.009570357825403221,#B645DD,mediumorchid
- f__Limnotrichaceae,0.009985867851560241,#E2823E,sienna2
- f__Colwelliaceae,0.010709973142117643,#5A7AA0,lightskyblue4
- f__uncultured,0.011929926918256397,#8FF09A,"c(""lightgreen"", ""palegreen2"")"
- f__Desulfolunaceae,0.011964748527106736,#8C732A,goldenrod4
- f__Pla4_lineage,0.012378159305178126,#A9AF99,"c(""gray65"", ""grey65"")"
- f__Diplorickettsiaceae,0.012891457316947151,#534479,mediumpurple4
- f__Sphingomonadaceae,0.014587684043518028,#E567E5,orchid
- f__Unknown_Family,0.01613082418170383,#9390EC,mediumpurple2
- f__JTB23,0.018390417569864585,#AD20EA,purple
- f__Francisellaceae,0.01854039431540624,#8EEF3B,greenyellow
- f__KI89A_clade,0.018673061058252297,#72EFCF,aquamarine2
- f__Amoebophilaceae,0.021010527203316576,#EF7784,lightcoral
- f__Cyclobacteriaceae,0.025729232459260315,#B7EAB2,darkseagreen2
- f__Hyphomonadaceae,0.026554894103042917,#BA71E3,mediumpurple2
- f__Saprospiraceae,0.0275337910092584,#F1CF94,burlywood2
- f__Thiomicrospiraceae,0.028369253902398656,#4DD0C8,mediumturquoise
- f__Desulfovibrionaceae,0.03979061986753434,#5AF25F,seagreen2
- f__Parvularculaceae,0.04301093517074813,#64C030,chartreuse3
- f__Myxococcaceae,0.0444437750155087,#5D91E2,cornflowerblue
- f__Kiloniellaceae,0.048976767641717656,#8FEFB8,aquamarine2
- f__Acanthopleuribacteraceae,0.07172839855492082,#CDEDCA,darkseagreen1
- f__Arcobacteraceae,0.08365611820101454,#5027DC,purple3
- f__Phycisphaeraceae,0.09423920035530631,#CAF633,olivedrab1
- f__Stappiaceae,0.10613541352657574,#68AEE4,steelblue2
- f__Cellvibrionaceae,0.11074587324489793,#EA63C0,hotpink
- f__Kordiimonadaceae,0.11226475215136332,#9ACDC6,paleturquoise3
- f__Alteromonadaceae,0.1211815280680794,#B2DA80,darkolivegreen2
- f__Pirellulaceae,0.12500457671433815,#A4F3E1,paleturquoise2
- f__Desulfobacteraceae,0.1383596215553025,#B3A3CD,lightsteelblue3
- f__Micavibrionaceae,0.13842646084382085,#668365,darkseagreen4
- f__Methyloligellaceae,0.15616654768573318,#E0DDE7,"c(""gray88"", ""grey88"")"
- f__Rhodobacteraceae,0.17388096466439687,#B776A3,rosybrown
- f__Magnetospiraceae,0.18550180744715775,#E5AFE5,plum2
- f__Thalassospiraceae,0.1888468679985964,#C4C691,wheat3
- f__Endozoicomonadaceae,0.2149843335039208,#E9E642,olivedrab1
- f__Nitrincolaceae,0.2685800474760391,#8CAC3A,"c(""olivedrab3"", ""yellowgreen"")"
- f__Vibrionaceae,0.27169094229248597,#ADD0EE,lightskyblue2
+<5% abundance,0,#D3D3D3,lightgrey
+ Rickettsiaceae,0.05172413793103448,#9CEA9A,"c(""lightgreen"", ""palegreen2"")"
+ uncultured,0.0519774011299435,#9E8F97,"c(""gray59"", ""grey59"")"
+ Hyphomonadaceae,0.05397485170100883,#D98879,darksalmon
+ Thiomicrospiraceae,0.06050484425594923,#DBBE46,tan2
+ Unknown_Family,0.060859425089751416,#A5F03E,olivedrab2
+ Cyclobacteriaceae,0.061991285675133484,#D2749B,palevioletred
+ Parvularculaceae,0.06262847227660803,#DE9DDE,plum
+ Kiloniellaceae,0.0628278369670177,#6EC8E1,skyblue2
+ Francisellaceae,0.06571087216248507,#E29244,tan2
+ Gimesiaceae,0.06762295081967214,#E6C0AE,peachpuff2
+ Methyloligellaceae,0.07933615275873779,#639E96,cadetblue
+ Micavibrionaceae,0.08077082012800743,#A9EDC7,darkseagreen2
+ Kordiimonadaceae,0.08094193448257582,#CAE792,lemonchiffon3
+ OM190,0.08196721311475409,#874B98,orchid4
+ Saprospiraceae,0.08240391712510552,#DB3CDF,mediumorchid2
+ Colwelliaceae,0.08387557530550706,#5EEE5E,palegreen3
+ Stappiaceae,0.08832180837782305,#707534,darkolivegreen4
+ Desulfovibrionaceae,0.09018660039450282,#E7BFD7,thistle
+ Arcobacteraceae,0.09449704864153023,#E34AA0,violetred2
+ Limnotrichaceae,0.09662724084574885,#DE77E0,orchid
+ Diplorickettsiaceae,0.09741462602032318,#8A59DA,mediumpurple3
+ Phycisphaeraceae,0.09865305465226681,#7881E1,mediumslateblue
+ Rhodobacteraceae,0.09928003361472645,#AEE4E3,powderblue
+ Desulfolunaceae,0.10019985811124033,#B9E264,darkolivegreen2
+ Pla4_lineage,0.10027285129604366,#61E5E0,aquamarine2
+ Alteromonadaceae,0.10037025566229428,#5DECC0,aquamarine2
+ Acanthopleuribacteraceae,0.10125927857036307,#E8E081,lightgoldenrod
+ Amoebophilaceae,0.10302140219504159,#66BA51,palegreen4
+ Thalassospiraceae,0.10850612822335035,#C6CEE6,lightsteelblue2
+ Magnetospiraceae,0.11754860641092295,#E4E6B7,lemonchiffon2
+ Nitrincolaceae,0.1330510973548375,#DCE4DA,"c(""gray87"", ""grey87"")"
+ Oleiphilaceae,0.13546126897625535,#B1A7E0,lightsteelblue3
+ Vibrionaceae,0.1544090264349602,#5EED92,seagreen2
+ Pirellulaceae,0.17123392623896533,#E1EC3E,olivedrab1
+ Myxococcaceae,0.19912866080059385,#7C31EB,blueviolet
+ Desulfobacteraceae,0.20925991792188595,#74B985,palegreen3
+ Endozoicomonadaceae,0.22391495648266807,#E55448,tomato2
+ Cellvibrionaceae,0.3192157799675407,#6DA4DF,skyblue3

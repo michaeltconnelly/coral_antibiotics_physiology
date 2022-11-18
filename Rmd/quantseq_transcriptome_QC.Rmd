@@ -114,6 +114,15 @@ QC_summary <- QC_summary %>%
 QC_summary$pipeline_step <- factor(QC_summary$pipeline_step, levels = c("Raw Reads", "Trimmed Reads", "Uniquely Mapped Reads", "Input Reads", "Assigned Reads"), ordered = TRUE)
 QC_summary$Treatment <- factor(QC_summary$Treatment, levels = treatment_levels, ordered = TRUE)
 ```
+```{r}
+# pick top aligned samples within each genotype
+QC_summary %>% 
+  dplyr::filter(pipeline_step == "Uniquely Mapped Reads" & Treatment != "Antibiotics") %>% 
+  group_by(Genotype) %>% # (Treatment)
+  dplyr::slice_max(read_count) %>%
+  arrange(Genotype)
+```
+
 
 ## Vizualize raw read depth distribution
 ```{r read_depth_all}
