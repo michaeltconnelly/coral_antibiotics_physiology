@@ -1,0 +1,240 @@
+---
+title: "Pocillopora tree visualization"
+author: "Mike Connelly"
+date: "10/22/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+```
+
+## Setup packages and working directories
+```{r}
+library("ape")
+library("tidyverse")
+library("tidytree")
+library("treeio")
+library("ggtree")
+library("ggtreeExtra")
+library("ggrepel")
+#
+library("extrafont")
+library("extrafontdb")
+```
+
+## Import sample metadata
+```{r genotypes_fragments}
+genotypes <- read_csv("data/genotypes.csv")
+#
+fragments <- read_csv("data/fragments.csv", col_types = cols(
+  Fragment_ID = col_character()))
+```
+```{r factors}
+# factor levels
+treatment_levels <- c("Baseline", "Control", "Antibiotics")
+sampling_levels <- c("Day 0", "Day 7")
+genotype_levels <- c("PAN-05", "PAN-10", "PAN-32", "PAN-34", "PAN-35", "PAN-37", "PAN-39", "PAN-41", "PAN-43","PAN-44", "PAN-78", "PAN-79", "PAN-83", "URA-51", NA)
+gulf_levels <- c("Chiriqui", "Panama")
+loc_levels <- c("Uva", "Saboga", "Uraba")
+mtorf_levels <- c("Type_1", "Type_3")
+sym_levels <- c("C1bc", "C1d", "D1")
+genus_levels <- c("Cladocopium", "Durusdinium")
+```
+```{r  sample_data, echo=TRUE}
+# Import sample metadata 
+sample_metadata <- read_delim("./data/quantseq_metadata.tsv", delim ="\t", col_names = c("Sample_ID", "Genotype", "Treatment", "Sampling_Time", "Sequencing_Success", "Sequencing_Round", "Include_Analysis"), comment = "#")#, row.names = 1, header = FALSE)
+# join with genotype metadata
+sample_metadata <- sample_metadata %>% left_join(genotypes, by = "Genotype")
+# Set factor orders
+# sample_metadata$Genotype <- factor(sample_metadata$Genotype, levels = genotype_levels, ordered = TRUE)
+# sample_metadata$Treatment <- factor(sample_metadata$Treatment, levels = treatment_levels, ordered = TRUE)
+sample_metadata$Gulf <- factor(sample_metadata$Gulf, levels = gulf_levels, ordered = TRUE)
+sample_metadata$Location <- factor(sample_metadata$Location, levels = loc_levels, ordered = TRUE)
+sample_metadata$mtORF <- factor(sample_metadata$mtORF, levels = mtorf_levels, ordered = TRUE)
+sample_metadata$ITS2 <- factor(sample_metadata$ITS2, levels = sym_levels, ordered = TRUE)
+sample_metadata$Symbiont_Genus <- ifelse(sample_metadata$ITS2 == "D1", "Durusdinium", "Cladocopium")
+# Create analysis-compatible sample map
+```
+```{r}
+#pdam_genome <- ape::read.dna("/Users/mikeconnelly/computing/sequences/genomes/coral/pocillopora/pdam/pdam_genome.fasta", format = "fasta")
+```
+```{r}
+#pdam_gff <- read.table("/Users/mikeconnelly/computing/sequences/genomes/coral/pocillopora/pdam/pdam_genome.gff", sep="\t", quote="")
+```
+```{r colors}
+gg_color_hue <- function(n) {
+  hues = seq(15, 375, length = n + 1)
+  hcl(h = hues, l = 65, c = 100)[1:n]
+}
+gcolors <- gg_color_hue(n_distinct(samples$Study))
+```
+```{r shapes}
+spshapes <- c(21, 24, 22, 23, 23, 25)
+```
+
+## RAxML 
+### Import tree files
+```{r raxml_tree_import}
+# bootstrap tree from raxmlHPC job
+tree <- read.newick("./outputs/raxml/raxml_run_006/RAxML_bipartitions.vcf_meta_0.95_unlinked")
+# tree <- read.newick("./outputs/raxml/raxml_run_003/vcf_meta_0.95_unlinked.raxml.support")
+# tree <- read.newick("./outputs/raxml/raxml_run_001/metapocillopora_004_filtered_strict.raxml.support")
+```
+```{r}
+# inspect phylogenetic tree
+tree$tip.label <- str_replace(tree$tip.label, "_1$", "")
+```
+```{r}
+# plot
+ggtree(tree)
+```
+
+```{r tree_annotations_df}
+# create data frame for plotting metadata with ggtree
+tree$tip.label %in% samples$Sample_ID
+# 
+samples_tree <- samples %>% dplyr::filter(Sample_ID %in% tree$tip.label)
+
+df_tip_data <- samples_tree[match(tree$tip.label,samples_tree$Sample_ID), ] %>% 
+  relocate(Sample_ID, .before = Study)
+#
+df_tip_data$Study <- factor(df_tip_data$Study, levels = study_levels, ordered = TRUE)
+
+df_tip_data <- df_tip_data %>%
+  left_join(samples_grp, by = "Sample_ID") %>% 
+  dplyr::rename("DAPC_Group" = Group)
+```
+
+```{r}
+tree_title <- expression(paste("RAxML ML tree of ", italic("Pocillopora"), " SNPs (", 1130, ")"))
+pdf("./outputs/figures/raxml_tree_bs_groups_unlinked_1130.pdf", width = 6.5, height = 5)
+gtree <- ggtree(tree) #
+# adjust bootstrap values
+d <- gtree$data
+d <- d[!d$isTip,]
+d$label <- as.numeric(d$label)
+#
+boots <- d # [d$label == 100,]
+boots$label <-  ifelse(boots$label == 100, "100",
+                       ifelse(boots$label > 90, ">90",
+                              ifelse(boots$label > 70, ">70",
+                                     ifelse(boots$label > 50, "\U00B7", "")))) 
+
+raxml.tree.fig <- gtree %<+% df_tip_data + 
+  # geom_treescale(x = 0.1, width = 0.05) +
+  # geom_text(aes(label=node), hjust=-.3) +
+  # geom_nodelab(aes(label=tree$node.label)) +
+  # geom_nodelab(aes(label=label), subset=as.numeric(tree$node.label) > 90, size = 2.5, hjust=-.3) +
+  geom_text(data = boots, aes(label=label), size = 2, hjust = 1.4, vjust = -0.2, fontface = 2) +
+  # geom_tiplab(size = 2, hjust = -0.05) +
+  geom_tippoint(aes(fill = DAPC_Group), size = 3, shape = 21, alpha = 0.8, stroke = 0.5, color = "black", hjust = 0.3, show.legend = TRUE) +
+  scale_fill_manual(values = seasun(n_groups), name = "DAPC Cluster",
+                     guide = guide_legend(override.aes = list(size = 4, shape = 21, fill = seasun(n_groups)),
+                                         nrow = 8, order = 1, title.position = "top")) +
+  # scale_shape_manual(values = spshapes,
+  #                    guide = guide_legend(override.aes = list(size = 4, alpha = 0.8, stroke = 0.5, fill = "black"),
+  #                                         nrow = 4, order = 2, title.position = "top")) +
+  theme(legend.position = "right",
+        plot.margin = margin(5,5,5,5, unit = "mm")) +
+  ggtitle(tree_title)
+print(raxml.tree.fig)
+dev.off()
+```
+
+## SNAPP
+### Import tree files
+
+```{r snapp}
+# tree <- read.newick("./outputs/snapp/snapp_run_001/meta.snap.out.tree")
+tree <- read.nexus("./outputs/snapp/snapp_run_001/meta.snap.out.tree")
+beast <- read.beast("./outputs/snapp/snapp_run_001/meta.snap.out.tree")
+# 
+tree <- read.nexus("./outputs/snapp/snap.con.tree")
+beast <- read.beast("./outputs/snapp/snap.con.tree")
+tree
+beast
+```
+```{r}
+# inspect phylogenetic tree
+tree$tip.label <- str_replace(tree$tip.label, "_$", "")
+tree$tip.label <- str_replace(tree$tip.label, "_1$", "")
+tree$tip.label
+```
+```{r}
+tree$edge.length
+```
+```{r}
+ggtree(tree)
+```
+```{r tree_annotations_df}
+# create data frame for plotting metadata with ggtree
+tree$tip.label %in% genotypes$Genotype
+# use `Sample` for SNAPP tree
+# 
+samples_tree <- samples %>% dplyr::filter(Sample %in% tree$tip.label)
+
+df_tip_data <- genotypes[match(tree$tip.label, genotypes$Genotype), ]
+# 
+all(df_tip_data$Genotype == tree$tip.label)
+#
+```
+```{r}
+# rename tree tip labels
+tree$tip.label <- df_tip_data$Sample_ID
+```
+
+```{r}
+tree_title <- expression(paste("SNAPP tree of ", italic("Pocillopora"), " SNPs (", 150, ")"))
+gtree <- ggtree(tree) #
+snapp.tree.fig <- gtree %<+% df_tip_data + 
+  geom_treescale(x = 0.05, width = 0.01) +
+  # geom_text(aes(label=node), hjust=-.3) +
+  # geom_nodelab(aes(label=tree$node.label)) +
+  # geom_nodelab(aes(label=label), subset=as.numeric(tree$node.label) > 90, size = 2.5, hjust=-.3) +
+  # geom_text(data = boots, aes(label=label), size = 2, hjust = 1.4, vjust = -0.2, fontface = 2) +
+  geom_tiplab(size = 2, hjust = -0.05) +
+  geom_tippoint(aes(fill = mtORF), size = 3, shape = 21, alpha = 0.8, stroke = 0.5, color = "black", show.legend = TRUE) +
+  scale_fill_manual(values = c("darkorange1", "darkturquoise"), name = "mtORF Type",
+  guide = guide_legend(override.aes = list(size = 4, shape = 21, fill = c("darkorange1", "darkturquoise")),
+  nrow = 8, order = 1, title.position = "top")) +
+  theme(legend.position = "right",
+        plot.margin = margin(5,5,5,5, unit = "mm")) +
+  ggtitle(tree_title)
+print(snapp.tree.fig)
+```
+
+
+```{r}
+# beast@phylo$tip.label <- df_tip_data$Sample_ID
+gbeast <- ggtree(beast)
+#
+snapp.tree.fig <- gbeast %<+% df_tip_data + 
+  # geom_tiplab(size = 2, hjust = -0.05, align=TRUE, linetype='dashed', linesize=.3) + 
+  geom_tiplab(size = 3, hjust = -0.1) +
+geom_tippoint(aes(fill = mtORF), size = 3, shape = 21, alpha = 0.8, stroke = 0.5, color = "black", show.legend = TRUE) +
+  scale_fill_manual(values = c("darkorange1", "darkturquoise"), name = "mtORF Type",
+  guide = guide_legend(override.aes = list(size = 4, shape = 21, fill = c("darkorange1", "darkturquoise")),
+  nrow = 8, order = 1, title.position = "top")) +
+  # geom_range("length_0.95_HPD", color='red', size=2, alpha=.5) +
+  geom_treescale(x = 0.05, width = 0.01) +
+  geom_rootedge(rootedge = 0.01) +
+  geom_text2(aes(label=round(as.numeric(posterior), 2), 
+                 subset=as.numeric(posterior) > 0.95, 
+                 x=branch), vjust = -0.4, size = 3) +
+  ggplot2::xlim(-0.01, 0.12) +
+   theme(legend.position = "right",
+        plot.margin = margin(10,10,10,10, unit = "pt"),
+        legend.margin = margin(0,0,0,0, unit = "mm")) +
+  ggtitle(tree_title)
+print(snapp.tree.fig)
+```
+
+```{r}
+# combine RAxML and SNAPP trees
+pdf("./outputs/figures/poc_anti_snapp_tree.pdf", width = 6.5, height = 4)
+print(snapp.tree.fig)
+dev.off()
+```
+

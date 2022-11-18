@@ -83,68 +83,72 @@ samples_success <- sample_metadata %>%
 
 ## Import VCF file
 ```{r imporf vcf}
-vcf_meta <- vcfR::read.vcfR(file = "./outputs/tagseq/samples_all_filtered_primary.vcf")
+vcf <- vcfR::read.vcfR(file = "./outputs/tagseq/samples_all_filtered_primary.vcf")
+vcf <- vcfR::read.vcfR(file = "./outputs/phylotrans_Pdam/samples_all_filtered_primary.vcf")
 ```
 ```{r}
 # subset to top-aligned samples in each genotype
-vcf_meta
-vcf_meta[is.biallelic(vcf_meta), 1:8]
- top_samples 
-vcf_meta[, 1] 
+# vcf
+# vcf[is.biallelic(vcf), 1:8]
+#  top_samples 
+# vcf[, 1] 
 ```
 
 ## Convert to GENIND object
 ```{r genind convert}
-genind_meta <- vcfR2genind(vcf_meta)
-# class(genind_meta)
-genind_meta
+genind <- vcfR2genind(vcf)
+# class(genind)
+genind
+# 
+genlight <- vcfR2genlight(vcf)
 ```
 ```{r genind summary}
-# genind_summary_meta <- summary(genind_meta)
+# genind_summary <- summary(genind)
 ```
 
 ## PCA
 ```{r pca}
 # 
-x_meta <- tab(genind_meta, freq = TRUE, NA.method = "mean")
+x <- tab(genind, freq = TRUE, NA.method = "mean")
 # 
-pca_meta <- dudi.pca(x_meta, center = TRUE, scale = FALSE, scannf = FALSE, nf = 216)
+pca <- dudi.pca(x, center = TRUE, scale = FALSE, scannf = FALSE, nf = 216)
 # ?dudi.pca()
 ```
 ```{r pca plot check}
-s.label(pca_meta$li, xax=1, yax=2)
+s.label(pca$li, xax=1, yax=2)
 ```
 
 ## Figure 5
 ```{r}
-pca_df <- pca_meta$li %>%
+pca_df <- pca$li %>%
   rownames_to_column("Sample_ID") %>% 
   dplyr::mutate(Sample_ID = str_replace(`Sample_ID`, "_R1$", "")) %>% 
-  dplyr::right_join(samples_success, by = "Sample_ID")
+  dplyr::left_join(samples_success, by = "Sample_ID")
 #
 # pca_df$Study <- factor(pca_df$Study, levels = study_levels, ordered = TRUE)
 ```
 ```{r PC_vars}
-pc1lab <- paste("PC1: ", round(pca_meta$eig[1]/sum(pca_meta$eig)*100, 2), "%", sep = "")
-pc2lab <- paste("PC2: ", round(pca_meta$eig[2]/sum(pca_meta$eig)*100, 2), "%", sep = "")
+pc1lab <- paste("PC1: ", round(pca$eig[1]/sum(pca$eig)*100, 2), "%", sep = "")
+pc2lab <- paste("PC2: ", round(pca$eig[2]/sum(pca$eig)*100, 2), "%", sep = "")
+ratio <- (round(pca$eig[2]/sum(pca$eig)*100, 2)/round(pca$eig[1]/sum(pca$eig)*100, 2))
 ```
 ```{r}
 # Figure 5 
 pca_title <- expression(paste("PCA of phylotranscriptomic SNPs"))
-# pdf("./outputs/figures/Fig5_VCF_SNPs_pca_select_thin.pdf", height = 7.5, width = 9)
+# pdf("./outputs/figures/VCF_SNPs_pca_select_thin.pdf", height = 7.5, width = 9)
 pca_df %>%
   ggplot(., aes(Axis1, Axis2)) +
   geom_point(aes(fill = Genotype, shape = mtORF), size = 4, alpha = 0.8, stroke = 0.5, color = "black") +
-  stat_ellipse(aes(color = mtORF), show.legend = FALSE) +
+  # stat_ellipse(aes(color = mtORF), show.legend = FALSE) +
   # geom_text_repel(aes(label = Sample_ID), size = 2, max.overlaps = 100)
   scale_fill_manual(values = genocolors,
-                    guide = guide_legend(override.aes = list(size = 6, shape = 21, fill = genocolors),
+                    guide = guide_legend(override.aes = list(size = 6, shape = 21, fill = gg_color_hue(n_distinct(pca_df$Genotype))),
                                          nrow = 8, title.position = "top")) +
   scale_color_manual(values = c("darkorange1","turquoise2")) +
   scale_shape_manual(values = c(21,23),
                      guide = guide_legend(override.aes = list(size = 6, alpha = 0.8, stroke = 0.5, fill = "black"),
                                           nrow = 4, title.position = "top")) +
-  coord_fixed(13.74/26.39) +
+  coord_fixed(ratio) +
   theme_bw() +
   theme(
     # plot.title = element_text(size = 28),
@@ -159,32 +163,41 @@ pca_df %>%
 # dev.off()
 ```
 
+### PCoA
+```{r}
+pca <- dudi.pco(x)
+# ?dudi.pco()
+```
+```{r pca plot check}
+s.label(pca$li, xax=1, yax=2)
+```
+
 ## Find clusters in data
 ```{r}
 # Find clusters
-# grp_meta <- find.clusters(genind_meta, max.n.clust = 100, n.pca = 300)
+# grp <- find.clusters(genind, max.n.clust = 100, n.pca = 300)
 # All PCs retained, 37 clusters identified
 # small subset
-grp_meta <- find.clusters(genind_meta, max.n.clust = 40, n.pca = 120)
+grp <- find.clusters(genind, max.n.clust = 40, n.pca = 120)
 # All PCs retained, 4 clusters identified
 ```
 ```{r}
 pdf("./outputs/adegenet/pca_find-clusters.pdf", height = 5, width = 6)
-grp_meta <- find.clusters(genind_meta, max.n.clust = 40, n.pca = 41)
+grp <- find.clusters(genind, max.n.clust = 40, n.pca = 41)
 dev.off()
 ```
 ```{r}
 # Inspect output of find.clusters
-grp_meta$Kstat
-grp_meta$stat
-grp_meta$grp
-grp_meta$size
+grp$Kstat
+grp$stat
+grp$grp
+grp$size
 ```
 ## DAPC
 ```{r dapc_optimization}
 # However, unlike k-means, DAPC can benefit from not using too many PCs. Indeed, retaining too many components with respect to the number of individuals can lead to over-fitting and unstability in the membership probabilities returned by the method
 # How many PCs should be kept?
-dapcopt <- dapc(genind_meta, grp_meta$grp, n.da = 1, n.pca = 30)
+dapcopt <- dapc(genind, grp$grp, n.da = 1, n.pca = 30)
 # 
 optim.a.score(dapcopt, n.sim = 100)
 
@@ -197,40 +210,40 @@ optim.a.score(dapcopt, n.sim = 100)
 
 ```{r}
 # Run the analysis on the dataset using the previously inferred groups
-dapc_meta <- dapc(genind_meta, grp_meta$grp)
+dapc <- dapc(genind, grp$grp)
 ```
 ```{r}
 # Inspect output of dapc
-dapc_meta
-dapc_meta$n.pca
-dapc_meta$n.da
-dapc_meta$tab
-dapc_meta$var
+dapc
+dapc$n.pca
+dapc$n.da
+dapc$tab
+dapc$var
 ```
 ```{r}
-scatter(dapc_meta)
+scatter(dapc)
 ```
 ```{r}
 # pdf("./outputs/adegenet/dapc_all.pdf")
-scatter(dapc_meta,
+scatter(dapc,
          scree.da=TRUE,  posi.da="bottomright",
          scree.pca=TRUE, posi.pca="bottomleft",
          bg="white", pch=20,  cell=0, cstar=0,
-        cex=3,clab=0, leg=TRUE, txt.leg=paste("Cluster",1:5)) 
+        cex=3,clab=0, leg=TRUE, txt.leg=paste("Cluster",1:18)) 
 # dev.off()
 ```
 ```{r}
-scatter(dapc_meta, 1, 1, bg="white",
+scatter(dapc, 1, 1, bg="white",
         scree.da=FALSE, legend=TRUE, solid=.4)
 ```
 ```{r}
-scatter(dapc_meta, 2, 2, bg="white",
+scatter(dapc, 2, 2, bg="white",
         scree.da=FALSE, legend=TRUE, solid=.4)
 ```
 
 ```{r}
 # Add DAPC cluster group information to samples data frame
-samples_grp <- data.frame("Sample_ID" = names(grp_meta$grp), "Group" = unname(grp_meta$grp)) %>% 
+samples_grp <- data.frame("Sample_ID" = names(grp$grp), "Group" = unname(grp$grp)) %>% 
   dplyr::mutate(Sample_ID = str_replace(`Sample_ID`, "_1$", ""))
 # 
 samples_keep <- samples %>% 
@@ -243,28 +256,28 @@ samples_keep <- samples %>%
 ```
 ### Figure 2
 ```{r}
-dapc_meta_df <- tibble(SampleID = rownames(dapc_meta$ind.coord),
-               grp = dapc_meta$grp,
-               LD1 = dapc_meta$ind.coord[,1],
-               LD2 = dapc_meta$ind.coord[,2])
+dapc_df <- tibble(SampleID = rownames(dapc$ind.coord),
+               grp = dapc$grp,
+               LD1 = dapc$ind.coord[,1],
+               LD2 = dapc$ind.coord[,2])
 #
-dapc_meta_df_1 <- dapc_meta_df %>%
+dapc_df_1 <- dapc_df %>%
   group_by(grp) %>%
   summarize(c1 = mean(LD1),
             c2 = mean(LD2)) %>% 
-  full_join(dapc_meta_df)
+  full_join(dapc_df)
 ```
 ```{r dapc_spider}
 # pdf("./outputs/figures/dapc_scatterplot_filtered_snapp.pdf", width = 5.67, height = 3.5)
 # 
 dapc_title <- expression(paste("DAPC of ", italic("Pocillopora"), " SNPs"))
   # 
-xlab <- paste("LD1 (", round(dapc_meta$eig[1]/sum(dapc_meta$eig)*100, digits = 1), "%)", sep = "")
-ylab <- paste("LD2 (", round(dapc_meta$eig[2]/sum(dapc_meta$eig)*100, digits = 1), "%)", sep = "")
+xlab <- paste("LD1 (", round(dapc$eig[1]/sum(dapc$eig)*100, digits = 1), "%)", sep = "")
+ylab <- paste("LD2 (", round(dapc$eig[2]/sum(dapc$eig)*100, digits = 1), "%)", sep = "")
 
 # Plot with spiders
 dapc.fig <- 
-  dapc_meta_df_1 %>% 
+  dapc_df_1 %>% 
   ggplot(., aes(fill = grp)) +
   #sample-centroid spiders paths
   stat_ellipse(aes(x = LD1, y = LD2, group = grp, color = grp)) +
@@ -273,9 +286,9 @@ dapc.fig <-
   # geom_point(aes(x = c1, y = c2, color = grp), size = 1, fill = NULL, shape = 21, stroke = 2, show.legend = TRUE) +
   # sample points
   geom_point(aes(x = LD1, y = LD2, fill = grp), color = "black", shape = 21, size = 3, alpha = 0.8, show.legend = TRUE) +
-  scale_color_manual(name = "Group", values = seasun(5)) +
+  scale_color_manual(name = "Group", values = seasun(18)) +
   # scale_shape_manual(name = "Gulf", values = c(21,23)) +
-  scale_fill_manual(name = "Group", values = seasun(5)) +
+  scale_fill_manual(name = "Group", values = seasun(18)) +
   # guides(shape = guide_legend(override.aes = list(shape = colshapes))) +
   theme_bw() +
   # theme(plot.margin = unit(c(-0.5, -0.5, 0.5, 0.5), "cm")) +
@@ -333,10 +346,10 @@ samples_keep %>%
 
 ### DAPC variable contributions
 ```{r}
-contrib <- loadingplot(dapc_meta$var.contr, axis=2,
+contrib <- loadingplot(dapc$var.contr, axis=2,
                        thres=.07, lab.jitter=1)
 # 
-dapc_loadings <- data.frame(dapc_meta$var.contr) %>% 
+dapc_loadings <- data.frame(dapc$var.contr) %>% 
   arrange(desc(LD1))
 ```
 
@@ -344,12 +357,12 @@ dapc_loadings <- data.frame(dapc_meta$var.contr) %>%
 ```{r}
 pdf("./outputs/figures_VCF_SNP_assignplot.pdf", width = 8.5, height = 11)
 par(mar=c(4,10,4,4))
-# summary(dapc_meta)
-assignplot(dapc_meta)
+# summary(dapc)
+assignplot(dapc)
 dev.off()
 ```
 ```{r}
-compoplot(dapc_meta, posi="bottomright",
+compoplot(dapc, posi="bottomright",
           # txt.leg=paste("Cluster", 1:13), lab="",
           ncol=1, xlab="individuals", col=funky(6))
 ```
@@ -372,11 +385,12 @@ compoplot(dapc_meta, posi="bottomright",
 ## snapclust
 ```{r}
 # adegenetTutorial("snapclust")
-meta_clust <- snapclust(genind_meta, k = 4)
+meta_clust <- snapclust(genind, k = 4)
 ```
 ```{r}
 meta_clust$group
 # 
 compoplot(meta_clust)
 ```
+
 
