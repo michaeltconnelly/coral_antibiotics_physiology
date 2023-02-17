@@ -149,8 +149,8 @@ ggPCA_mod1 <- function(vsd, samples, condcolors, ntop = 500,  pclab = c(1,2)) {
     scale_fill_manual(values=treatcolors[2:3], name="Treatment") +
     scale_color_manual(values=treatcolors[2:3], name="Treatment") +
     # scale_shape_manual(values=colshapes, name="Colony") +
-    theme(legend.position = "none") +
-    guides(color = guide_legend(override.aes = list(color = treatcolors[2:3], alpha = 1, stroke = 1)))
+    # theme(legend.position = "none") +
+    guides(color = guide_legend(override.aes = list(color = "black", fill = treatcolors[2:3], alpha = 1, stroke = 0.5)), fill = NULL)
   #
   PCAplot
 }
@@ -202,8 +202,8 @@ ggPCA_mod2 <- function(vsd, samples, condcolors, ntop = 500,  pclab = c(1,2)) {
     scale_fill_manual(values=treatcolors[2:3], name="Treatment") +
     scale_color_manual(values=treatcolors[2:3], name="Treatment") +
     # scale_shape_manual(values=colshapes, name="Colony") +
-    theme(legend.position = "none") +
-    guides(color = guide_legend(override.aes = list(color = treatcolors[2:3], alpha = 1, stroke = 1)))
+    # theme(legend.position = "none") +
+    guides(color = guide_legend(override.aes = list(color = "black", fill = treatcolors[2:3], alpha = 1, stroke = 0.5)), fill = NULL)
   #
   PCAplot
   # return(PCAtmthull)

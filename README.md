@@ -1,5 +1,5 @@
 # *Pocillopora* coral antibiotics physiology
-These scripts and data are for the analysis of physiology (IPAM fluorometry and respirometry), transcriptome and microbiome data for the publication "**Antibiotics reduce *Pocillopora* coral-associated bacteria diversity, alter holobiont physiology, and activate immune gene expression**".
+These scripts and data are for the analysis of physiology (IPAM fluorometry and respirometry), transcriptome and microbiome data for the publication "**Antibiotics reduce *Pocillopora* coral-associated bacteria diversity, decrease holobiont oxygen consumption, and activate immune gene expression**".
 
 Bacteria 16S and RNAseq data are deposited in the NBCI SRA under BioProject [PRJNA818888](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA818888/).
 
