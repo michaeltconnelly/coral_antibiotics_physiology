@@ -8,7 +8,7 @@ prodir="/scratch/nmnh_corals/connellym/projects/anti_phys"
 
 # making a list of sample names
 files=$(ls /scratch/nmnh_corals/connellym/projects/anti_phys/data/quantseq_reads/)
-samples=$(echo "$files" | cut -d . -f 1 | sort -u)
+samples=$(echo "$files" | cut -d . -f 1 | cut -d _ -f 1,2,3 | sort -u)
 
 for sample in $samples
 do
@@ -21,7 +21,7 @@ echo "#$  -S /bin/sh
 #$ -cwd
 #$ -j y
 #$ -N gvcf2vcf_${sample}
-#$ -o ${prodir}/bash/jobs/${sample}_phyloprocess.log
+#$ -o ${prodir}/bash/jobs/${sample}_gvcf2vcf.log
 #$ -m bea
 #$ -M connellym@si.edu" >> ${prodir}/bash/jobs/gvcf2vcf_${sample}.job
 #
@@ -39,7 +39,7 @@ echo 'echo "Starting conversion"' >> ${prodir}/bash/jobs/gvcf2vcf_${sample}.job
 #
 echo "bcftools convert --gvcf2vcf \
 -f /scratch/nmnh_corals/connellym/sequences/pdam/pdam_genome.fasta \
-${prodir}/outputs/STARalign_Pdam/${sample}_Pdam.g.vcf.gz \
+${prodir}/outputs/phylotrans_Pdam/${sample}_Pdam.g.vcf.gz \
 -o ${prodir}/outputs/phylotrans_Pdam/${sample}_Pdam.vcf.gz \
 --threads 16" >> ${prodir}/bash/jobs/gvcf2vcf_${sample}.job
 echo "#" >> ${prodir}/bash/jobs/gvcf2vcf_${sample}.job
