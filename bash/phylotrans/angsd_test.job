@@ -29,9 +29,9 @@ set=$1
 #samples=$(cat ${prodir}/data/${set}_samples.txt)
 
 # making a list of bam file paths
-#ls ${prodir}/outputs/alignments/${set}/*.sorted.md.rg.bam > ${prodir}/outputs/alignments/bamfile.txt
+ls ${prodir}/outputs/phylotrans_Pdam/*Control*splitN.bam > ${prodir}/outputs/phylotrans_Pdam/bamfile.txt
 # verify samples are correct
-#cat ${prodir}/outputs/alignments/bamfile.txt
+cat ${prodir}/outputs/phylotrans_Pdam/bamfile.txt
 
 # from https://github.com/z0on/ClonesAndClades_Ofav_Keys/blob/master/read_processing_walkthrough.txt
 # Manzello et al. 2018
