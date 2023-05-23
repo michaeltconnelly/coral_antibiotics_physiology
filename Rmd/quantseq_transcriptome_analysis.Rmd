@@ -300,9 +300,11 @@ ggPCA(vsd_coral, samples, genocolors, pclab = c(1,2), ntop = ntop) +
 # pdf("./outputs/figures/transcriptome_pca_control_anti.pdf")
 # pca_title <- expression(paste(italic("Pocillopora"), " gene expression PCA plot", sep = ""))
 # 
-pca1 <- ggPCA_mod1(vsd_coral, samples, genocolors, pclab = c(1,2), ntop = ntop) #+
+pca1 <- ggPCA_mod1(vsd_coral, samples, genocolors, pclab = c(1,2), ntop = ntop) +
   # facet_wrap("Genotype", ncol = 7) +
-  # ggtitle(pca_title)
+  ggtitle("Experimental treatment") +
+  # guides(color = guide_legend(title = NULL), color = NULL) +
+  theme(legend.title = element_blank(), legend.margin = margin(0,0,0,0, unit = "pt"))
 # dev.off()
 print(pca1)
 ```
@@ -310,11 +312,12 @@ print(pca1)
 ### Modified style with spider points connecting genotypes
 # ntop <- 2000
 # pdf("./outputs/figures/transcriptome_pca_control_anti.pdf")
-# pca_title <- expression(paste(italic("Pocillopora"), " gene expression PCA plot", sep = ""))
+pca_title <- expression(paste(italic("Pocillopora"), " genotype", sep = ""))
 # 
-pca2 <- ggPCA_mod2(vsd_coral, samples, genocolors, pclab = c(1,2), ntop = ntop) # +
+pca2 <- ggPCA_mod2(vsd_coral, samples, genocolors, pclab = c(1,2), ntop = ntop) +
   # facet_wrap("Genotype", ncol = 7) #+
-  # ggtitle(pca_title)
+  ggtitle(pca_title) +
+  theme(legend.title = element_blank(), legend.margin = margin(0,0,0,0, unit = "pt"))
 # dev.off()
 print(pca2)
 ```
@@ -340,13 +343,9 @@ dev.off()
 ```
 ```{r figure 4AB: manuscript}
 pdf("./outputs/figures/Fig4AB_transcriptome_pca.pdf", height = 68/25.4, width = 175/25.4)
-pca_title <- expression(paste(italic("Pocillopora"), " gene expression PCA plot", sep = ""))
+pca_title <- expression(paste(italic("Pocillopora"), " transcriptome PCA", sep = ""))
 # # 
-# tx_pca <- ggPCA(vsd_coral, samples, genocolors, pclab = c(1,2), ntop = ntop) +
-#   # facet_wrap("Genotype") +
-#   ggtitle(pca_title)
-# print(tx_pca)
-pca12 <- (pca1 | pca2) + plot_layout(guides = 'collect')
+pca12 <- (pca1 | pca2) + plot_layout(guides = "collect")
 print(pca12)
 dev.off()
 ```

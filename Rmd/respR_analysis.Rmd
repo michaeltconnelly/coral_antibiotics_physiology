@@ -318,15 +318,15 @@ rate <- plate %>%
   # filter(`Time/Min.` > 15 & `Time/Min.` < 45) %>% # filter out time before 10 minutes, this is usually how long the plate takes to equilibrate
   inspect(time = 2, oxygen = i) %>% 
   # Incorporate background rate detection into the analysis
-  calc_rate(from = 20, to = 45, by = "time") %>%
+  calc_rate(from = 15, to = 45, by = "time") %>%
   # auto_rate() %>% # automatically determine most linear segment
   print()  %>%   # just a quick preview
-  convert_rate(o2.unit = "%",
+  convert_rate(oxy.unit = "%Oxy",
                time.unit = "min", 
                output.unit = "ug/m", 
                volume = 0.6, S = 35, t = 26, P = 0.977)
 rates_frame[i-2, 1] <- names(wells_aoi[i-2])
-rates_frame[i-2, 2] <- rate$output[1]
+rates_frame[i-2, 2] <- rate$rate.output # changed 01/06/22
 rates_list[i-2] <- rate
 }
 ```
@@ -347,14 +347,14 @@ rate <- plate %>%
   # calc_rate(from = 90, to = 80, by = "o2") %>% # calculate rate between 90% and 80% oxygen saturation
   print()  %>%   # just a quick preview
    # Incorporate background rate detection into the analysis
-  convert_rate(o2.unit = "%",
+  convert_rate(oxy.unit = "%Oxy",
                time.unit = "min", 
                output.unit = "umol/min", 
                volume = 1.7*10^-3, S = 35, t = 26, P = 0.977)
    # Incorporate volume correction into the analysis
 #
 rates_frame[i-2, 1] <- names(wells_aoi[i-2])
-rates_frame[i-2, 2] <- rate$output[1]
+rates_frame[i-2, 2] <- rate$rate.output
 colnames(rates_frame) <- c("Well", "rate")
 }
 return(rates_frame)
@@ -369,17 +369,17 @@ rate <- plate %>%
   filter(`Time/Min.` > 15) %>% # filter before 15 minutes, usually how long plate takes to equilibrate
   filter(`Time/Min.` < 45) %>% # filter after 45 minutes, usually some wells below accepted O2 minimum 
   inspect(time = 2, oxygen = i) %>%
-  auto_rate() %>% # automatically determine most linear segment
+  auto_rate(method = "linear") %>% # automatically determine most linear segment
   print()  %>%   # just a quick preview
    # Incorporate background rate detection into the analysis
-  convert_rate(o2.unit = "%",
+  convert_rate(oxy.unit = "%Oxy",
                time.unit = "min",
                output.unit = "umol/min",
                volume = 1.7*10^-3, S = 35, t = 26, P = 0.977)
    # Incorporate volume correction into the analysis
 #
 rates_frame[i-2, 1] <- names(wells_aoi[i-2])
-rates_frame[i-2, 2] <- rate$output[1]
+rates_frame[i-2, 2] <- rate$rate.output[1] # retrieve the most linear, representative rate
 # colnames(rates_frame) <- c("Well", "rate")
 }
 return(rates_frame)
@@ -488,7 +488,7 @@ rates_frame_samples %>%
   ggplot(aes(Plate, (rate))) +
   geom_boxplot() +
   facet_grid(~Day)
-ggsave("./outputs/physio/respR/figures/samples_inspect_boxplots.pdf")
+# ggsave("./outputs/physio/respR/figures/samples_inspect_boxplots.pdf")
 ```
 ### Supplementary Figure 3
 ```{r}
@@ -533,6 +533,20 @@ rates_frame_samples_background_corrected <- rates_frame_samples %>%
   full_join(plate_bg_rates, by = "Plate_key") %>%
   mutate(rate = raw_rate + mean_bg_rate) %>%
   select(-Day.y, -Plate.y) %>% dplyr::rename(Day = Day.x, Plate = Plate.x)
+```
+
+```{r summarize_corrected_rates}
+rate_reduction_table <- rates_frame_samples_background_corrected %>% 
+  group_by(Genotype, Treatment) %>% 
+  summarise(mean_rate = mean(rate)) %>% 
+  pivot_wider(names_from = Treatment, values_from = mean_rate) %>% 
+  transmute(pct_rate_reduction = (1 -Antibiotics/Control)*100)
+  
+rate_reduction_table_days <- rates_frame_samples_background_corrected %>% 
+  group_by(Genotype, Day, Treatment) %>% 
+  summarise(mean_rate = mean(rate)) %>% 
+  pivot_wider(names_from = Treatment, values_from = mean_rate) %>% 
+  transmute(pct_rate_reduction = (1 -Antibiotics/Control)*100)
 ```
 
 ### Volume displacement correction

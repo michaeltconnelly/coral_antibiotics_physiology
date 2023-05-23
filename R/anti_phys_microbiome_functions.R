@@ -91,8 +91,11 @@ gg_biplot <- function (pcobj, choices = 1:2, scale = 1, pc.biplot = TRUE,
     dplyr::summarise(x_mean = mean(xvar), y_mean = mean(yvar), angle_mean = mean(angle), hjust_mean = mean(hjust)) #%>%
     # dplyr::filter(varname %in% int_families)
   # 
-  g <- ggplot(data = df.u, aes(x = xvar, y = yvar)) + xlab(u.axis.labs[1]) + 
-    ylab(u.axis.labs[2]) + coord_fixed(0.75) #coord_fixed()
+  g <- ggplot(data = df.u, aes(x = xvar, y = yvar)) +
+    # coord_fixed(0.5) + # coordinates fixed or not will alter final appearance
+    xlab(u.axis.labs[1]) + 
+    ylab(u.axis.labs[2]) 
+# 
   if (var.axes) {
     if (circle) {
       theta <- c(seq(-pi, pi, length = 50), seq(pi, -pi, 
@@ -146,7 +149,7 @@ gg_biplot <- function (pcobj, choices = 1:2, scale = 1, pc.biplot = TRUE,
   }
   else {
     if (!is.null(df.u$groups)) {
-      g <- g + geom_point(aes(fill = groups), shape = 21, size = 2, stroke = 0.5, color = "black", alpha = alpha, show.legend = FALSE)
+      g <- g + geom_point(aes(fill = groups), shape = 21, size = 2, stroke = 0.5, color = "black", alpha = alpha, show.legend = TRUE) # edit to include points legend below plot
     }
     else {
       g <- g + geom_point(alpha = alpha)
@@ -168,7 +171,7 @@ gg_biplot <- function (pcobj, choices = 1:2, scale = 1, pc.biplot = TRUE,
       dplyr::mutate(`Code` = ifelse(groups == "Antibiotics", "A", ifelse(groups == "Baseline", "B", "C")))
     #
     g <- g + # treatment labels
-      geom_label_repel(data = centroids, size = 2, aes(x = xc, y = yc, label = `Code`), box.padding = 0.05, alpha = 0.8, segment.alpha = 0)
+      geom_label_repel(data = centroids, size = 2, aes(x = xc, y = yc, label = `Code`), box.padding = 0.05, alpha = 0.8, segment.alpha = 0, show.legend = FALSE)
   }
   return(g)
   # return(df.v)

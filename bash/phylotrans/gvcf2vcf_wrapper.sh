@@ -9,7 +9,6 @@ prodir="/scratch/nmnh_corals/connellym/projects/anti_phys"
 # making a list of sample names
 files=$(ls /scratch/nmnh_corals/connellym/projects/anti_phys/data/quantseq_reads/)
 samples=$(echo "$files" | cut -d . -f 1 | sort -u)
-# | cut -d _ -f 1,2,3 
 
 for sample in $samples
 do

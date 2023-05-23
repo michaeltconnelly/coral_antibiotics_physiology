@@ -13,12 +13,12 @@ knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
 ```
 # Project and analysis setup
 ## Setup packages and working directories
-```{r packages, include=FALSE}
+```{r analysis packages, include=FALSE}
 library("plyr")
 library("tidyverse")
 # Essential microbiome analysis packages
 library("phyloseq")
-library("microbiome")
+# library("microbiome")
 library("zCompositions")
 library("CoDaSeq") # devtools::install_github('ggloor/CoDaSeq/CoDaSeq')
 library("vegan")
@@ -29,6 +29,8 @@ library("decontam") # devtools::install_github("benjjneb/decontam")
 # library("microbiomeMarker")
 library("UpSetR")
 library("eulerr")
+```
+```{r visualization packages, include = FALSE}
 # Data visualization packages
 library("pheatmap")
 # Graphics packages
@@ -48,10 +50,9 @@ library("ggrepel")
 library("ggnewscale")
 library("RColorBrewer")
 library("randomcoloR")
-library("wesanderson")
+# library("wesanderson")
 library("viridis")
 library("circlize")
-library("stringr")
 library("extrafont")
 library("extrafontdb")
 # extended visualization functions
@@ -105,17 +106,6 @@ genotypes <- read_csv("data/genotypes.csv")
 fragments <- read_csv("data/fragments.csv", col_types = cols(
   Fragment_ID = col_character()))
 ```
-```{r factors}
-# factor levels
-treatment_levels <- c("Baseline", "Control", "Antibiotics", "FSW_Controls", "SW_Controls", "Neg_Controls", "ZYMO_Controls")
-sampling_levels <- c("Day 0", "Day 7")
-genotype_levels <- c("PAN-05", "PAN-10", "PAN-32", "PAN-34", "PAN-35", "PAN-37", "PAN-39", "PAN-41", "PAN-43","PAN-44", "PAN-78", "PAN-79", "PAN-83", "URA-51", NA)
-gulf_levels <- c("Chiriqui", "Panama")
-loc_levels <- c("Uva", "Saboga", "Uraba")
-mtorf_levels <- c("Type_1", "Type_3")#, "unknown")
-sym_levels <- c("C1bc", "C1d", "D1")#, "unknown")
-genus_levels <- c("Cladocopium", "Durusdinium")
-```
 
 ## Read in ASV table, taxonomy, sample data
 ```{r asv}
@@ -135,9 +125,22 @@ taxonomy <- gsub("[dpcofgs]__", "", taxonomy)
 taxonomy <- gsub("^Euryarchaeota archaeon SCGC ", "", taxonomy) # remove excessively long family name for ease in plotting later
 taxa_df <- data.frame(taxonomy) %>% rownames_to_column("ASV")
 ```
-```{r tree_metadata}
+```{r tree}
 # Import phylogenetic tree
-tree <- read_tree("./outputs/qiime2/export_silva/tree.nwk")
+tree <- phyloseq::read_tree("./outputs/qiime2/export_silva/tree.nwk")
+```
+```{r factors}
+# factor levels
+treatment_levels <- c("Baseline", "Control", "Antibiotics", "FSW_Controls", "SW_Controls", "Neg_Controls", "ZYMO_Controls")
+sampling_levels <- c("Day 0", "Day 7")
+genotype_levels <- c("PAN-05", "PAN-10", "PAN-32", "PAN-34", "PAN-35", "PAN-37", "PAN-39", "PAN-41", "PAN-43","PAN-44", "PAN-78", "PAN-79", "PAN-83", "URA-51", NA)
+gulf_levels <- c("Chiriqui", "Panama")
+loc_levels <- c("Uva", "Saboga", "Uraba")
+mtorf_levels <- c("Type_1", "Type_3")#, "unknown")
+sym_levels <- c("C1bc", "C1d", "D1")#, "unknown")
+genus_levels <- c("Cladocopium", "Durusdinium")
+```
+```{r metadata}
 # Import sample metadata 
 sample_metadata <- read_delim("./data/qiime2_metadata.tsv", delim ="\t", col_names = c("Sample_ID", "Genotype", "Treatment", "Sampling_Time", "Seq_Control", "Neg_Control"), comment = "#")#, row.names = 1, header = FALSE)
 sample_metadata <- sample_metadata %>% full_join(genotypes, by = "Genotype")
@@ -148,7 +151,7 @@ sample_metadata$Gulf <- factor(sample_metadata$Gulf, levels = gulf_levels, order
 sample_metadata$Location <- factor(sample_metadata$Location, levels = loc_levels, ordered = TRUE)
 sample_metadata$mtORF <- factor(sample_metadata$mtORF, levels = mtorf_levels, ordered = TRUE)
 sample_metadata$ITS2 <- factor(sample_metadata$ITS2, levels = sym_levels, ordered = TRUE)
-sample_metadata$Symbiont_Genus <- ifelse(sample_metadata$ITS2 == "D1", "Durusdinium", "Cladocopium")
+# sample_metadata$Symbiont_Genus <- ifelse(sample_metadata$ITS2 == "D1", "Durusdinium", "Cladocopium")
 # Create phyloseq-compatible sample map
 map <- sample_metadata %>% column_to_rownames("Sample_ID")
 ```
@@ -161,7 +164,7 @@ ps <- phyloseq(otu_table(ASV, taxa_are_rows = FALSE),
 ps
 # summarize_phyloseq(ps)
 # otu_table()   OTU Table:         [ 2153 taxa and 185 samples ]
-# sample_data() Sample Data:       [ 185 samples by 11 sample variables ]
+# sample_data() Sample Data:       [ 185 samples by 12 sample variables ]
 # tax_table()   Taxonomy Table:    [ 2153 taxa by 7 taxonomic ranks ]
 # phy_tree()    Phylogenetic Tree: [ 2153 tips and 2124 internal nodes ]
 ```
@@ -272,13 +275,15 @@ get_taxa_unique(ps_filtered, "Genus") %>% length() #93
 ```{r other_filters}
 #remove ASVs that do not occur more than 2 times in more than half the samples
 # f1 <- genefilter_sample(ps, filterfun_sample(function(x) x > 2), A=0.5*nsamples(ps))
-# #remove ASVs that do not occur more than 1 time in 10% of samples
+
+# remove ASVs that do not occur more than 1 time in 10% of samples
 # f2 <- filter_taxa(ps_assigned_AXH, function(x) sum(x > 1) > (0.1*length(x)), TRUE)
 # # f2
 # ps_filtered_AXH <- f2
-# #remove OTU not seen more than one in at least 10% of samples
-# ps_filtered <- filter_taxa(ps_assigned, function(x) sum(x > 1) > (0.1*length(x)), TRUE)
-# psf2
+
+# #remove OTU not seen more than one in at least 5% of samples
+ps_filtered <- filter_taxa(ps_assigned, function(x) sum(x > 1) > (2), TRUE)
+ps_filtered
 ```
 ```{r keep_unfiltered}
 # or keep unfiltered 
@@ -634,6 +639,8 @@ samples_only <- grep("_", samples, value = TRUE, invert = FALSE)
 ps_filtered_samples <- prune_samples(samples_only, ps_filtered)
 ps_samples <- prune_samples(samples_only, ps)
 #
+```
+```{r}
 samples_baselinecontrol <- grep("Antibiotics", samples_only, value = TRUE, invert = TRUE)
 ps_filtered_baselinecontrol <- prune_samples(samples_baselinecontrol, ps_filtered)
 ```
@@ -651,6 +658,9 @@ sample_metadata <- data.frame(sample_data(ps_filtered_samples)) %>% rownames_to_
 family <- as.character(taxon[,"Family"])
 genus <- as.character(taxon[,"Genus"])
 ```
+```{r zPatterns}
+zPatterns(otu, label = 0)
+```
 ```{r centered_log-ratio_transform}
 # Transform zero counts using the count zero multiplicative method in zCompositions, Palarea-Albaladejo and Martín-Fernández, 2015: https://doi.org/10.1016/j.chemolab.2015.02.019
 # First, replace 0 values with an estimate (because normalization is taking log, can't have 0)
@@ -659,6 +669,14 @@ otu_czm <- cmultRepl(t(otu), method = "CZM", label = 0) # 279,747 corrected valu
 # Perform the center-log-ratio (CLR) transformation, recommended by Gloor et al. 2017: https://doi.org/10.3389/fmicb.2017.02224
 otu_clr <- codaSeq.clr(otu_czm)
 ```
+```{r}
+# Check columns with only 1 non-zero in the given data set.
+checkNumZerosCol <- apply(otu,2,function(x) sum(x==0))
+cases <- which(checkNumZerosCol == (nrow(otu) - 1))
+length(cases) # 1797 columns are all zeros but one positive value
+zcomp <- cmultRepl(otu[,-cases]) # GBM imputation without them works
+```
+
 ### Beta diversity ordination - centered log-ratio PCA
 ```{r codaseq}
 # transpose matrix of CLR transformed data for ordination and dendrogram
@@ -678,7 +696,7 @@ ylab <- paste("PC2: ", pc2, "%", sep="")
 ```{r clr_pca_biplot}
 # pdf("./outputs/phyloseq_results/figures/CoDA_PCA_biplot.pdf")
 biplot(d_pcx, cex=c(0.6,0.4), var.axes=F,scale=1, xlab=xlab, ylab=ylab, ylabs=family)
-ggbiplot(d_pcx,
+gg_biplot(d_pcx,
          choices = c(1,2),
          # groups = sample_metadata$Sample_ID,
          varname.abbrev = T) #+ scale_color_manual(values = c(treatcolors, rep("black", 4)))
@@ -723,7 +741,7 @@ pca_clr_biplot
 ```
 ### Figure 3A
 ```{r figure 3A: powerpoint}
-pdf("./outputs/figures/bacteria_pca_clr_decontam_no-bones.pdf", height = 4.5, width = 6.5)
+# pdf("./outputs/figures/bacteria_pca_clr_decontam_no-bones.pdf", height = 4.5, width = 6.5)
 plot_title <- expression(paste(italic("Pocillopora"), ' bacteria communities PCA plot', sep = ""))
 pca_clr_biplot <- d_pcx %>% 
   gg_biplot(., choices = c(1,2),
@@ -747,11 +765,11 @@ pca_clr_biplot <- d_pcx %>%
   guides(color = guide_legend(override.aes = list(color = treatcolors, alpha = 1, stroke = 1)))
 #
 pca_clr_biplot
-dev.off()
+# dev.off()
 ```
 ```{r figure 3A: manuscript}
-pdf("./outputs/figures/Fig3A_bacteria_pca_clr_decontam.pdf", height = 88/25.4, width = 88/25.4) # two-column max size
-plot_title <- expression(paste(italic("Pocillopora"), ' bacteria communities PCA', sep = ""))
+# pdf("./outputs/figures/Fig3A_bacteria_pca_clr_decontam.pdf", height = 88/25.4, width = 88/25.4) # two-column max size
+plot_title <- expression(paste(italic("Pocillopora"), ' bacterial communities PCA', sep = ""))
 pca_clr_biplot <- d_pcx %>% 
   gg_biplot(., choices = c(1,2),
             groups = sample_metadata$Treatment,
@@ -767,10 +785,11 @@ pca_clr_biplot <- d_pcx %>%
   scale_fill_manual(values = treatcolors[1:3], name = "Treatment") +
   # scale_shape_manual(values = shapes, name = "Location") +
   ggtitle(plot_title) +
-  guides(color = guide_legend(override.aes = list(color = treatcolors, alpha = 1, stroke = 1)))
+  guides(fill = guide_legend(title = NULL, nrow = 3), color = FALSE) +
+  theme(legend.position = c(0.86, 0.845), legend.margin = margin(0,0,0,0, "mm"), legend.spacing.y = unit(1, "mm"))
 #
 pca_clr_biplot
-dev.off()
+# dev.off()
 ```
 
 ### Beta diversity statistical testing
@@ -1115,7 +1134,8 @@ dev.off()
 
 ### Figure 3ABC
 ```{r figure 3: patchwork}
-figure_3 <- (pca_clr_biplot | obs_boxplot / beta_boxplot)
+figure_3 <- (pca_clr_biplot | obs_boxplot / beta_boxplot) + 
+  plot_layout(widths = c(1.4,1), guides = "keep")
 # Need to add plot annotation tags (ie. A,B,C in Inkscape)
 pdf("./outputs/figures/Fig3_ABC.pdf", height = 88.9/25.4, width = 175/25.4)
 print(figure_3)
