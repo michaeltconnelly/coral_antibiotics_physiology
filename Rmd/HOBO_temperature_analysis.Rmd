@@ -52,17 +52,24 @@ temps_expt <- temps %>% filter(`Date & Time (GMT -4:00)` > "2020-08-31 08:00:00"
 mean_incubator_temp <- mean(temps_expt[temps_expt$series == "2", ]$`Temp. (°C)`)
 hobo_title <- "Microfragment aquarium incubator temperature versus room air temperature "
 
-pdf("./outputs/figures/FigS1E_hobo_temperatures.pdf", width = 6.5, height = 2)
+pdf("./outputs/figures/FigS1E_hobo_temperatures.pdf", width = 5.5, height = 2.5)
 temps_expt %>% 
   ggplot(aes(`Date & Time (GMT -4:00)`, `Temp. (°C)`)) + 
   geom_hline(yintercept = mean_incubator_temp, linetype = "dashed") +
   geom_line(aes(color = `Location`), size = 1, alpha = 1) +
   scale_color_manual(values = c("darkgrey", "black"), name = "Location") +
-  scale_y_continuous(limits = c(21,27), breaks = seq(20, 28, 2)) +
+  scale_y_continuous(limits = c(21.5,28.5), breaks = seq(20, 28, 2)) +
   theme_ismej() +
     # ggtitle(hobo_title) + 
-    theme(panel.grid.major = element_line(color = "grey92"),
-        panel.grid.minor = element_line(color = "grey92")) 
+    theme(legend.title = element_blank(),
+      legend.text = element_text(size = 12),
+      # legend.background = element_rect(fill = "white", color = "black", size = 0.2),
+      plot.margin = margin(10,10,10,10, unit = "pt"),
+      axis.title = element_text(size = 12),
+      axis.text = element_text(size = 12),
+      panel.grid.major = element_line(color = "grey92"),
+        panel.grid.minor = element_line(color = "grey92"),
+        legend.position = c(0.2, 0.815))
 dev.off()
 ```
 
