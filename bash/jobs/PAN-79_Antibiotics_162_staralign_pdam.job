@@ -1,9 +1,0 @@
-#!/bin/bash
-#BSUB -q bigmem
-#BSUB -J PAN-79_Antibiotics_162_staralign_pdam
-#BSUB -o /scratch/projects/transcriptomics/mikeconnelly/projects/anti_phys/outputs/logfiles/PAN-79_Antibiotics_162staralign_pdam%J.out
-#BSUB -e /scratch/projects/transcriptomics/mikeconnelly/projects/anti_phys/outputs/errorfiles/PAN-79_Antibiotics_162staralign_pdam%J.err
-#BSUB -n 8
-#BSUB -W 4:00
-/scratch/projects/transcriptomics/mikeconnelly/programs/STAR-2.5.3a/bin/Linux_x86_64/STAR --runMode alignReads --quantMode TranscriptomeSAM --runThreadN 16 --readFilesIn /scratch/projects/transcriptomics/mikeconnelly/projects/anti_phys/outputs/trimmed_reads/PAN-79_Antibiotics_162_trimmed.fastq --genomeDir /scratch/projects/transcriptomics/mikeconnelly/sequences/genomes/coral/pocillopora/STARindex --sjdbGTFfeatureExon exon --sjdbGTFtagExonParentTranscript Parent --sjdbGTFfile /scratch/projects/transcriptomics/mikeconnelly/sequences/genomes/coral/pocillopora/pdam_genome.gff --twopassMode Basic --twopass1readsN -1 --outFilterType BySJout --outFilterMultimapNmax 20 --alignSJoverhangMin 8 --alignSJDBoverhangMin 1 --outFilterMismatchNmax 999 --outFilterMismatchNoverLmax 0.1 --alignIntronMin 20 --alignIntronMax 1000000 --alignMatesGapMax 1000000 --outSAMattributes NH HI NM MD --outStd Log BAM_Unsorted BAM_Quant --outSAMtype BAM Unsorted SortedByCoordinate --outReadsUnmapped Fastx --outFileNamePrefix /scratch/projects/transcriptomics/mikeconnelly/projects/anti_phys/outputs/STARalign_Pdam/PAN-79_Antibiotics_162_Pdam
-echo STAR alignment of PAN-79_Antibiotics_162 complete

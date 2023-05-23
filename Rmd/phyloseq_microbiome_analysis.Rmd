@@ -985,6 +985,7 @@ genera_baselinecontrol <- toptaxa_summary(ps_filtered_baselinecontrol, "Genus")
 ```{r}
 phyla_antibiotics <- toptaxa_summary(ps_antibiotics, "Phylum")
 families_antibiotics <- toptaxa_summary(ps_antibiotics, "Family")
+genera_antibiotics <- toptaxa_summary(ps_antibiotics, "Genus")
 ```
 
 
